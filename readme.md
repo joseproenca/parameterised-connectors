@@ -1,4 +1,4 @@
-Parameterised connectors
+Parameterised connectors [![Build Status](https://travis-ci.org/joseproenca/parameterised-connectors.svg?branch=master)](https://travis-ci.org/joseproenca/parameterised-connectors)
 ========================
 
 This scala library investigates a language to compose connectors (or components).
