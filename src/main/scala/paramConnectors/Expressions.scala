@@ -1,15 +1,19 @@
 package paramConnectors
 
+trait Var
+
+sealed abstract class Expr
+
 /**
  * Integer expressions
  */
-sealed abstract class IExpr {
+sealed abstract class IExpr extends Expr {
   def +(that:IExpr) = Add(this,that)
   def *(that:IExpr) = Mul(this,that)
 }
 
 case class IVal(n:Int) extends IExpr
-case class IVar(x:String) extends IExpr
+case class IVar(x:String) extends IExpr with Var
 case class Add(e1:IExpr,e2:IExpr) extends IExpr
 case class Mul(e1:IExpr,e2:IExpr) extends IExpr
 case class Sum(x:IVar,from:IExpr,to:IExpr,e:IExpr) extends IExpr
@@ -20,7 +24,7 @@ case class ITE(b:BExpr,ifTrue:IExpr,ifFalse:IExpr) extends IExpr
 /**
   * Boolean expressions
   */
-sealed abstract class BExpr {
+sealed abstract class BExpr extends Expr {
   def &(that:BExpr) = (this,that) match {
     case (BVal(true),_) => that
     case(_,BVal(true)) => this
@@ -33,7 +37,7 @@ sealed abstract class BExpr {
 }
 
 case class BVal(b:Boolean) extends BExpr
-case class BVar(x:String) extends BExpr
+case class BVar(x:String) extends BExpr with Var
 //case class IEQ(e1:Interface,e2:Interface) extends BExpr
 case class EQ(e1:IExpr,e2:IExpr) extends BExpr
 case class And(es:List[BExpr]) extends BExpr // special treatment for ands, because constraints in typechecking are a big conjunction

@@ -1,14 +1,16 @@
 package paramConnectors
 
-import paramConnectors.TypeCheck.Arguments
-
 /**
  * Created by jose on 25/05/15.
  */
 
 private sealed abstract class Item
-private case class IItem(v:IVar,e:IExpr) extends Item
-private case class BItem(v:BVar,e:BExpr) extends Item
+private case class IItem(v:IVar,e:IExpr) extends Item {
+  override def toString = s"${v.x}:Int -> ${PrettyPrint.show(e)}"
+}
+private case class BItem(v:BVar,e:BExpr) extends Item {
+  override def toString = s"${v.x}:Bool -> ${PrettyPrint.show(e)}"
+}
 
 /**
  * List of pairs (variable -> expression) that can be applied in succession.
@@ -40,16 +42,16 @@ class Substitution(items:List[Item]) {
       prev = subst(i,prev)
     prev
   }
-  def apply(typ:TypeCheck.Type): TypeCheck.Type = {
-    var TypeCheck.Type(args,i,j,const) = typ
+  def apply(typ:Type): Type = {
+    var Type(args,i,j,const) = typ
     for (it <- items) {
-      val vars = args.vars.map(_._1)
-      args = subst(it, args, vars)
+      val vars = args.vars
+      args = subst(it, args, vars) // dummy subst so far (just returns args!)
       i = subst(it, i)
       j = subst(it, j)
       const = subst(it, const)
     }
-    TypeCheck.Type(args,i,j,const)
+    Type(args,i,j,const)
   }
 
 
@@ -85,7 +87,7 @@ class Substitution(items:List[Item]) {
     case Cond(b, i1, i2) => Cond(subst(it,b),subst(it,i1),subst(it,i2))
   }
   // this version ignores the replacing of variables, the commented one replaces and cleans up the argument list
-  private def subst(i:Item,args:Arguments,l:List[String]): Arguments = args
+  private def subst(i:Item,args:Arguments,l:List[Var]): Arguments = args
   //    private def subst(it:Item,args:Arguments,vars:List[String]): Arguments = (it,args.vars) match {
   //      case (_,Nil) => Arguments(Nil)
   //      case (BItem(BVar(x),BVar(y)), (x2,"Bool") :: tl) if x == x2 =>
@@ -98,7 +100,7 @@ class Substitution(items:List[Item]) {
   //    }
 
 
-  override def toString: String = items.mkString("[",",","]")
+  override def toString: String = items.mkString("[",", ","]")
 
 }
 

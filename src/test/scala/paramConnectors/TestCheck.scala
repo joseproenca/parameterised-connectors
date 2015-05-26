@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 import DSL._
 import PrettyPrint._
-import paramConnectors.TypeCheck.{TypeCheckException, Type}
+import paramConnectors.TypeCheck.TypeCheckException
 
 /**
  * Created by jose on 18/05/15.
@@ -21,8 +21,8 @@ class TestCheck {
     println(" - type(ev): "+show(Unify.eval(TypeCheck.interfaceSem(typ.i)))+" -> "+show(Unify.eval(TypeCheck.interfaceSem(typ.j))))
     println(" - rest(ev): "+show(Unify.eval(rest)))
 //    println(" - apply unif: "+(subst(typ)))
-//    assertEquals(typString,typ.toString)
-//    assertEquals(constEval,show(Unify.eval(rest)).toString)
+    assertEquals(typString,typ.toString)
+    assertEquals(constEval,show(Unify.eval(rest)).toString)
   }
   def testTypeError(c:Connector) = try {
     val t = TypeCheck.check(c)
@@ -62,7 +62,7 @@ class TestCheck {
     testCheck(IApp(IAbs(x,"fifo"^x),2),
               "1^2 -> 1^2", "true")
     testCheck(IAbs(x,IAbs(y,"fifo"^x $ id^y)),
-              "∀x:Int,y:Int . 1^x -> 1^y | (1 * x) == (1 * y)", "true")
+              "∀x:Int,y:Int . 1^ysasdc as -> 1^y | (1 * y) == (1 * y)", "true")
 
     testTypeError(IAbs(x,IAbs(x,"fifo"^(x+y))))   // var x is not fresh
     testTypeError(IAbs(x,IAbs(y,"fifo"^(x+z))))   // var z not found

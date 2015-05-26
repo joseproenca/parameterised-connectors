@@ -1,6 +1,6 @@
 package paramConnectors
 
-import paramConnectors.TypeCheck.{TypeCheckException}
+import paramConnectors.TypeCheck.TypeCheckException
 
 /**
  * Created by jose on 20/05/15.
@@ -15,15 +15,16 @@ object Unify {
    * @param const constraint where a unification is searched for.
    * @return a general unification and postponed constraints.
    */
-  def getUnification(const:BExpr): (Substitution,BExpr) = getUnification(eval(const),BVal(true))
+  def getUnification(const:BExpr): (Substitution,BExpr) =
+    getUnification(eval(const),BVal(b=true))
 
   private def getUnification(const:BExpr,rest:BExpr): (Substitution,BExpr) = const match {
     case And(BVal(true)::exps) => getUnification(And(exps),rest)
     case And(BVal(false)::_)   => throw new TypeCheckException("Search for unification failed - constraint unsatisfiable.")
     case And((x@BVar(_))::exps) =>
-      val s = Substitution(x,BVal(true))
+      val s = Substitution(x,BVal(b=true))
       val (news,newrest) = getUnification(s(And(exps)),rest)
-      (news + (x,BVal(true)), newrest)
+      (news + (x,BVal(b=true)), newrest)
     case And(EQ(e1, e2)::exps) if e1 == e2 => getUnification(And(exps),rest)
     case And(EQ(x@IVar(_), e2)::exps) if free(x,e2) =>
       val s = Substitution(x , e2)
@@ -31,7 +32,7 @@ object Unify {
       (news + (x,e2), newrest)
     // swap arguments
     case And(EQ(e1,x@IVar(_))::exps) =>
-      getUnification( And(EQ(x,e1)::exps),rest)
+      getUnification(And(EQ(x,e1)::exps),rest)
     // "equality"/"or" of general int expresions - postpone
     case And((eq@EQ(_,_))::exps) => getUnification(And(exps),rest & eq)
     case And((or@Or(_,_))::exps) => getUnification(And(exps),rest & or)
@@ -83,9 +84,9 @@ object Unify {
     case And(Nil) => e
     case And(e1::es) => (eval(e1),eval(And(es))) match {
       case (BVal(true),ev) => ev
-      case (BVal(false),ev) => BVal(false)
+      case (BVal(false),ev) => BVal(b=false)
       case (ev,BVal(true)) => ev
-      case (ev,BVal(false)) => BVal(false)
+      case (ev,BVal(false)) => BVal(b=false)
       case (a,b) => a & b
     }
     case Or(e1, e2) => (eval(e1),eval(e2)) match {

@@ -48,40 +48,9 @@ object TypeCheck {
       "[-"+bools.map(_+":Bool").mkString(",") + ints.map(","+_+":Int").mkString("")+"-]"
   }
 
-  // Sometimes order is important (arguments of applications)
-  /**
-   * Sequence of pairs "variable name" -> "Type name".
-   * Similar to a context, except order matters (and it is more general with the supported types).
-   * @param vars pars of variables (name,type).
-   */
-  case class Arguments(vars:List[(String,String)]) {
-    def ++(that:Arguments): Arguments = Arguments(vars ::: that.vars)
-    def +(that:(String,String)) = Arguments(that :: vars)
-
-    override def toString = vars.map(x=>x._1+":"+x._2).mkString(",")
-  }
-  // empty constructure for arguments
-  object Arguments{
-    def apply():Arguments = Arguments(List())
-  }
-
-  /**
-   * Type of a parameterised connector
-   * @param args universally quantified variables with types used by i and j
-   * @param i input interface
-   * @param j output interface
-   * @param const constraints that must hold to be a well-typed connector
-   */
-  case class Type(args:Arguments, i:Interface, j:Interface, const:BExpr) {
-    override def toString =
-      (if (args.vars.isEmpty) "" else "∀"+args.toString+" . ") +
-      PrettyPrint.show(i) + " -> "+ PrettyPrint.show(j) +
-        (if (const == BVal(true)) "" else " | " + PrettyPrint.show(const) )
-  }
 
   private var seed = 0
   private def fresh() = {seed += 1; "x"+seed}
-
 
   /**
    * Finds a type (and constraints) by building a type derivation tree.
@@ -102,16 +71,17 @@ object TypeCheck {
       val Type(args2,i2,j2,phi2) = check(gamma,c2)
       Type(args1 ++ args2, i1 * i2, j1 * j2, phi1 & phi2)
     case Id(i:Interface) =>
-      Type(Arguments(), i, i, BVal(true))
+      Type(Arguments(), i, i, BVal(b=true))
     case Symmetry(i, j) =>
-      Type(Arguments(), i*j, j*i, BVal(true))
+      Type(Arguments(), i*j, j*i, BVal(b=true))
     case Trace(i, c) =>
       val Type(args,i1,j1,phi) = check(gamma,c)
       val x = Port(IVar(fresh())) // gen unique name
       val y = Port(IVar(fresh())) // gen unique name
-      Type(args, x, y, EQ(interfaceSem(x * i), interfaceSem(i1)) & EQ(interfaceSem(y * i), interfaceSem(j1)) & phi)
+      Type(args, x, y, EQ(interfaceSem(x * i), interfaceSem(i1)) &
+                       EQ(interfaceSem(y * i), interfaceSem(j1)) & phi)
     case Prim(name) =>
-      Type(Arguments(), 1, 1, BVal(true)) //so far custom primitives will have type 1 -> 1
+      Type(Arguments(), 1, 1, BVal(b=true)) //so far custom primitives will have type 1 -> 1
     case Exp(a, c) =>
       check(gamma,a)
       val Type(args,i,j,phi) = check(gamma,c)
@@ -133,25 +103,27 @@ object TypeCheck {
       Type(args1++args2, Cond(b,i1,i2), Cond(b,j1,j2), phi1 & phi2)
     case IAbs(x, c) =>
       val Type(args,i,j,phi) = check(gamma.addInt(x),c)
-      Type(args + (x.x->"Int") ,i,j,phi)
+      Type(args + x ,i,j,phi)
     case BAbs(x, c) =>
       val Type(args,i,j,phi) = check(gamma.addBool(x),c)
-      Type(args + (x.x->"Bool") ,i,j,phi)
+      Type(args + x ,i,j,phi)
     case IApp(c, a) =>
       val Type(args,i,j,phi) = check(gamma,c)
-      if (args.vars.head._2 != "Int")
-        throw new TypeCheckException(s"application: expected 'int', found ${args.vars.head._2}.")
-      else {
-        val s = Substitution(args.vars.head._1, a)
-        Type(Arguments(args.vars.tail),s(i),s(j),phi)
+      args.vars.head match {
+        case x@IVar(_) =>
+          val s = Substitution(x, a)
+          Type(Arguments(args.vars.tail),s(i),s(j),phi)
+        case x =>
+          throw new TypeCheckException(s"application: expected 'int', found ${x.getClass}.")
       }
     case BApp(c, b) =>
       val Type(args,i,j,phi) = check(gamma,c)
-      if (args.vars.head._2 != "Bool")
-        throw new TypeCheckException(s"application: expected 'bool', found ${args.vars.head._2}.")
-      else {
-        val s = Substitution(args.vars.head._1, b)
-        Type(Arguments(args.vars.tail),s(i),s(j),phi)
+      args.vars.head match {
+        case x@BVar(_) =>
+          val s = Substitution(x, b)
+          Type(Arguments(args.vars.tail),s(i),s(j),phi)
+        case x =>
+          throw new TypeCheckException(s"application: expected 'bool', found ${x.getClass}.")
       }
   }
 
