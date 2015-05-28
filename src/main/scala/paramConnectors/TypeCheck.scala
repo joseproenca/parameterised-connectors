@@ -1,6 +1,7 @@
 package paramConnectors
 
 import DSL._
+import Eval.interfaceSem
 
 /**
  * Created by jose on 17/05/15.
@@ -90,8 +91,8 @@ object TypeCheck {
     case ExpX(x, a, c) =>
       check(gamma,a)
       val Type(args,i,j,phi) = check(gamma.addInt(x),c)
-      val ci = Sum(x,IVal(1),a,Eval(i))
-      val cj = Sum(x,IVal(1),a,Eval(j))
+      val ci = Sum(x,IVal(1),a,interfaceSem(Eval(i)))
+      val cj = Sum(x,IVal(1),a,interfaceSem(Eval(j)))
       val newi = IVar(fresh()) // gen unique name
       val newj = IVar(fresh()) // gen unique name
       Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & phi)
@@ -112,7 +113,7 @@ object TypeCheck {
       args.vars.head match {
         case x@IVar(_) =>
           val s = Substitution(x, a)
-          Type(Arguments(args.vars.tail),s(i),s(j),phi)
+          Type(Arguments(args.vars.tail),s(i),s(j),s(phi))
         case x =>
           throw new TypeCheckException(s"application: expected 'int', found ${x.getClass}.")
       }
@@ -121,7 +122,7 @@ object TypeCheck {
       args.vars.head match {
         case x@BVar(_) =>
           val s = Substitution(x, b)
-          Type(Arguments(args.vars.tail),s(i),s(j),phi)
+          Type(Arguments(args.vars.tail),s(i),s(j),s(phi))
         case x =>
           throw new TypeCheckException(s"application: expected 'bool', found ${x.getClass}.")
       }
@@ -153,12 +154,5 @@ object TypeCheck {
 //    case Repl(a, i)      => check(gamma,a); check(gamma,i)
 //    case Cond(b, i1, i2) => check(gamma,b); check(gamma,i1); check(gamma,i2)
 //  }
-
-  def interfaceSem(itf:Interface): IExpr = itf match {
-    case Tensor(i, j) => interfaceSem(i) + interfaceSem(j)
-    case Port(a) => a
-    case Repl(i, a) => interfaceSem(i) * a
-    case Cond(b, i1, i2) => ITE(b,interfaceSem(i1),interfaceSem(i2))
-  }
 
 }

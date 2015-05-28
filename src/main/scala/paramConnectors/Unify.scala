@@ -16,7 +16,7 @@ object Unify {
    * @return a general unification and postponed constraints.
    */
   def getUnification(const:BExpr): (Substitution,BExpr) =
-    getUnification(eval(const),BVal(b=true))
+    getUnification(Eval(const),BVal(b=true))
 
   private def getUnification(const:BExpr,rest:BExpr): (Substitution,BExpr) = const match {
     case And(BVal(true)::exps) => getUnification(And(exps),rest)
@@ -41,59 +41,7 @@ object Unify {
     case other => getUnification(And(other::Nil),rest)
   }
 
-  def eval(e:IExpr): IExpr = e match {
-    case IVal(_) => e
-    case IVar(_) => e
-    case Add(e1, e2) => (eval(e1),eval(e2)) match {
-      case (IVal(a),IVal(b)) => IVal(a+b)
-      case (IVal(0),e3) => e3
-      case (e3,IVal(0)) => e3
-      case (ev1,ev2) => Add(ev1,ev2)
-    }
-    case Mul(e1, e2) => (eval(e1),eval(e2)) match {
-      case (IVal(a),IVal(b)) => IVal(a*b)
-      case (IVal(0),_) => IVal(0)
-      case (_,IVal(0)) => IVal(0)
-      case (IVal(1),e3) => e3
-      case (e3,IVal(1)) => e3
-      case (ev1,ev2) => Mul(ev1,ev2)
-    }
-    case Sum(x, from, to, newe) => (eval(from),eval(to)) match {
-      case (IVal(a),IVal(b)) =>
-        var res: IExpr = IVal(0)
-        val ev = eval(newe)
-        for(y <- a until b)
-          res += Substitution(x , IVal(y))(ev)
-        res // e(a) + ... + e(b)
-      case (ev1,ev2) => Sum(x,eval(from),eval(to),eval(newe))
-    }
-    case ITE(b, ifTrue, ifFalse) => eval(b) match {
-      case BVal(bv) => if (bv) eval(ifTrue) else eval(ifFalse)
-      case other => ITE(other,eval(ifTrue),eval(ifFalse))
-    }
-  }
 
-  def eval(e:BExpr): BExpr = e match {
-    case BVal(b) => e
-    case BVar(x) => e
-//    case IEQ(e1, e2) => eval(EQ(interfaceSem(e1),interfaceSem(e2)))
-    case EQ(e1, e2) => (eval(e1),eval(e2)) match {
-      case (IVal(i1),IVal(i2)) => BVal(i1 == i2)
-      case (a,b) => EQ(a,b)
-    }
-    case And(Nil) => e
-    case And(e1::es) => (eval(e1),eval(And(es))) match {
-      case (BVal(true),ev) => ev
-      case (BVal(false),ev) => BVal(b=false)
-      case (ev,BVal(true)) => ev
-      case (ev,BVal(false)) => BVal(b=false)
-      case (a,b) => a & b
-    }
-    case Or(e1, e2) => (eval(e1),eval(e2)) match {
-      case (BVal(i1), BVal(i2)) => BVal(i1 || i2)
-      case (a, b) => Or(a, b)
-    }
-  }
 
   def free(x:IVar,e:IExpr): Boolean = e match {
     case `x` => false

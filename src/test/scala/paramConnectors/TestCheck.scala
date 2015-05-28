@@ -12,25 +12,30 @@ import paramConnectors.TypeCheck.TypeCheckException
 class TestCheck {
 
   def testCheck(c:Connector,typString:String,constEval:String) {
+    // 1 - build derivation tree
     val oldtyp = TypeCheck.check(c)
+    // 2 - unify constraints and get a substitution
     val (subst,rest) = Unify.getUnification(oldtyp.const)
+    // 3 - apply substitution to the type
     val typ = subst(oldtyp)
-    println(show(c)+" : "+typ)
+    println(show(c))
+    println(" - type(pre-subst): "+oldtyp)
+    println(" - type(pos-subst): "+typ)
+    println(" - type(pos-eval) : "+Eval(typ))
+//    println(" - rest(eval-alws): "+show(rest))
     println(" - subst: "+subst)
-//    println(" - rest : "+show(rest))
-    println(" - type(ev): "+show(Unify.eval(TypeCheck.interfaceSem(typ.i)))+" -> "+show(Unify.eval(TypeCheck.interfaceSem(typ.j))))
-    println(" - rest(ev): "+show(Unify.eval(rest)))
 //    println(" - apply unif: "+(subst(typ)))
     assertEquals(typString,typ.toString)
-    assertEquals(constEval,show(Unify.eval(rest)).toString)
+    assertEquals(constEval,show(Eval(rest)).toString)
   }
   def testTypeError(c:Connector) = try {
     val t = TypeCheck.check(c)
     val _ = Unify.getUnification(t.const)
-    throw new RuntimeException("Type error not found in "+show(c)+" : "+t)
-  } catch {
-    case _:TypeCheckException =>
-    case e:Throwable => throw e
+    throw new RuntimeException("Type error not found in " + show(c) + " : " + t)
+  }
+  catch {
+    case _: TypeCheckException =>
+    case e: Throwable => throw e
   }
 
   val x: IVar = "x"
@@ -62,7 +67,9 @@ class TestCheck {
     testCheck(IApp(IAbs(x,"fifo"^x),2),
               "1^2 -> 1^2", "true")
     testCheck(IAbs(x,IAbs(y,"fifo"^x $ id^y)),
-              "∀x:Int,y:Int . 1^ysasdc as -> 1^y | (1 * y) == (1 * y)", "true")
+              "∀x:Int,y:Int . 1^y -> 1^y | (1 * y) == (1 * y)", "true")
+    testCheck(IApp(IAbs(x,IAbs(y,"fifo"^x $ id^y)),3),
+              "∀y:Int . 1^3 -> 1^3 | (1 * 3) == (1 * 3)", "true")
 
     testTypeError(IAbs(x,IAbs(x,"fifo"^(x+y))))   // var x is not fresh
     testTypeError(IAbs(x,IAbs(y,"fifo"^(x+z))))   // var z not found
