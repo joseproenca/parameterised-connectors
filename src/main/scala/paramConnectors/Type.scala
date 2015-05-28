@@ -28,6 +28,11 @@ case class Type(args:Arguments, i:Interface, j:Interface, const:BExpr) {
 case class Arguments(vars:List[Var]) {
   def ++(that:Arguments): Arguments = Arguments(vars ::: that.vars)
   def +(that:Var) = Arguments(that :: vars)
+  def disjoint(that:Arguments): Boolean = {
+    for (v <- vars)
+      if (that.vars.contains(v)) return false
+    true
+  }
 
   override def toString = //vars.map(x=>x._1+":"+x._2).mkString(",")
     vars.map {

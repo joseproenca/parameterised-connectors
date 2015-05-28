@@ -2,6 +2,7 @@ package paramConnectors
 
 import DSL._
 import Eval.interfaceSem
+import PrettyPrint.show
 
 /**
  * Created by jose on 17/05/15.
@@ -66,10 +67,14 @@ object TypeCheck {
     case Seq(c1, c2) =>
       val Type(args1,i1,j1,phi1) = check(gamma,c1)
       val Type(args2,i2,j2,phi2) = check(gamma,c2)
+      if (!(args1 disjoint args2))
+        throw new TypeCheckException(s"arguments of ${show(c1)} and ${show(c2)} are not disjoint.")
       Type(args1 ++ args2, i1, j2, EQ(interfaceSem(j1),interfaceSem(i2)) & phi1 & phi2)
     case Par(c1, c2) =>
       val Type(args1,i1,j1,phi1) = check(gamma,c1)
       val Type(args2,i2,j2,phi2) = check(gamma,c2)
+      if (!(args1 disjoint args2))
+        throw new TypeCheckException(s"arguments of ${show(c1)} and ${show(c2)} are not disjoint.")
       Type(args1 ++ args2, i1 * i2, j1 * j2, phi1 & phi2)
     case Id(i:Interface) =>
       Type(Arguments(), i, i, BVal(b=true))
@@ -81,8 +86,8 @@ object TypeCheck {
       val y = Port(IVar(fresh())) // gen unique name
       Type(args, x, y, EQ(interfaceSem(x * i), interfaceSem(i1)) &
                        EQ(interfaceSem(y * i), interfaceSem(j1)) & phi)
-    case Prim(name) =>
-      Type(Arguments(), 1, 1, BVal(b=true)) //so far custom primitives will have type 1 -> 1
+    case Prim(name,i,j) =>
+      Type(Arguments(), i, j, BVal(b=true))
     case Exp(a, c) =>
       check(gamma,a)
       val Type(args,i,j,phi) = check(gamma,c)

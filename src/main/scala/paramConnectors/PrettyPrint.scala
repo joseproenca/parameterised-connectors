@@ -7,7 +7,7 @@ object PrettyPrint {
     case Id(_)          => "id"
     case Symmetry(i, j) => s"swap(${show(i)},${show(j)})"
     case Trace(i, c)    => s"Tr_${show(i)}{${show(c)}}"
-    case Prim(name)     => name
+    case Prim(name,_,_) => name
     case Exp(a, c)  => s"${showP(c)}^${showP(a)}"
     case ExpX(x, a, c)  => s"${showP(c)}^(${show(x)},${show(a)})"
     case Choice(b, c1, c2) => s"if ${showP(c1)} then ${showP(c1)} else ${showP(c2)}"
