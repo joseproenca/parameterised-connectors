@@ -39,6 +39,11 @@ object Eval {
       case (e3,IVal(0)) => e3
       case (ev1,ev2) => Add(ev1,ev2)
     }
+    case Sub(e1, e2) => (apply(e1),apply(e2)) match {
+      case (IVal(a),IVal(b)) => IVal(a-b)
+      case (e3,IVal(0)) => e3
+      case (ev1,ev2) => Sub(ev1,ev2)
+    }
     case Mul(e1, e2) => (apply(e1),apply(e2)) match {
       case (IVal(a),IVal(b)) => IVal(a*b)
       case (IVal(0),_) => IVal(0)

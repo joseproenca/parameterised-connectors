@@ -10,6 +10,7 @@ object DSL {
   implicit def str2BVar(s:String): BVar = BVar(s)
   implicit def int2IExp(n:Int): IExpr= IVal(n)
   implicit def int2Interface(n:Int): Interface = Port(IVal(n))
+  implicit def exp2Interface(e:IExpr): Interface= Port(e)
   val swap = Symmetry(1,1)
   val id = Id(1)
   val fifo = Prim("fifo",1,1)

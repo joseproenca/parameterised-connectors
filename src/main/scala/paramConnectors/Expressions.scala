@@ -9,12 +9,14 @@ sealed abstract class Expr
  */
 sealed abstract class IExpr extends Expr {
   def +(that:IExpr) = Add(this,that)
+  def -(that:IExpr) = Sub(this,that)
   def *(that:IExpr) = Mul(this,that)
 }
 
 case class IVal(n:Int) extends IExpr
 case class IVar(x:String) extends IExpr with Var
 case class Add(e1:IExpr,e2:IExpr) extends IExpr
+case class Sub(e1:IExpr,e2:IExpr) extends IExpr
 case class Mul(e1:IExpr,e2:IExpr) extends IExpr
 case class Sum(x:IVar,from:IExpr,to:IExpr,e:IExpr) extends IExpr
 case class ITE(b:BExpr,ifTrue:IExpr,ifFalse:IExpr) extends IExpr

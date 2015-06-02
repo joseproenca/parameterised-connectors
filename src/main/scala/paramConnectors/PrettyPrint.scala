@@ -36,13 +36,14 @@ object PrettyPrint {
     case IVal(n) => n.toString
     case IVar(x) => x
     case Add(e1,e2) => s"${showP(e1)} + ${showP(e2)}"
+    case Sub(e1,e2) => s"${showP(e1)} - ${showP(e2)}"
     case Mul(e1,e2) => s"${showP(e1)} * ${showP(e2)}"
     case Sum(x,from,to,e) => s"Σ{${x.x}=${show(from)} until ${showP(to)}}(${show(e)})"
     case ITE(b,ifTrue,ifFalse) =>
       s"if ${showP(b)} then ${showP(ifTrue)} else ${showP(ifFalse)}"
   }
   private def showP(exp:IExpr):String = exp match {
-    case Add(_,_) | Mul(_,_) => s"(${show(exp)})"
+    case Add(_,_) | Sub(_,_) | Mul(_,_) => s"(${show(exp)})"
     case _ => show(exp)
   }
 

@@ -73,6 +73,7 @@ class Substitution(items:List[Item]) {
     }
     case IVal(n) => exp
     case Add(e1, e2) => Add(subst(i,e1),subst(i,e2))
+    case Sub(e1, e2) => Sub(subst(i,e1),subst(i,e2))
     case Mul(e1, e2) => Mul(subst(i,e1),subst(i,e2))
     case Sum(x, from, to, e) => i match {
       case IItem(`x`, e2) => exp // skip bound variable

@@ -48,6 +48,7 @@ object Unify {
     case IVal(_) => true
     case IVar(_) => true
     case Add(e1, e2) => free(x,e1) && free(x,e2)
+    case Sub(e1, e2) => free(x,e1) && free(x,e2)
     case Mul(e1, e2) => free(x,e1) && free(x,e2)
     case Sum(`x`, from, to, _) => free(x,from) && free(x,to)
     case Sum(_, from, to, e2) => free(x,from) && free(x,to) && free(x,e2)

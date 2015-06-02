@@ -81,6 +81,11 @@ class TestCheck {
     testCheck(IAbs(x,(id^x) * (id^x)) $ IAbs(y,"fifo"^y),
               "∀x:Int,y:Int . (1^x) * (1^x) -> 1^(x + x) | ((1 * x) + (1 * x)) == (1 * (x + x))",
               "∀x:Int,y:Int . x + x -> x + x")
+//    \Trc{n-1}{\swapc_{n-1,1} ~;~ \fifoc^{n}}
+    testCheck(IAbs(x,Trace(x - 1, Symmetry(x - 1,1) $ (fifo^x))),
+      "∀x:Int . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((1 + (x - 1)) == (1 * x))",
+      "∀x:Int . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((1 + (x - 1)) == x)")
+
 
     testTypeError(IAbs(x,IAbs(x,"fifo"^(x+y))))   // var x is not fresh
     testTypeError(IAbs(x,IAbs(y,"fifo"^(x+z))))   // var z not found
