@@ -46,7 +46,7 @@ class Substitution(items:List[Item]) {
     var Type(args,i,j,const) = typ
     for (it <- items) {
       val vars = args.vars
-      args = subst(it, args, vars) // dummy subst so far (just returns args!)
+      args = subst(it, args, vars) // select dummy subst (just returns args!) or smarter
       i = subst(it, i)
       j = subst(it, j)
       const = subst(it, const)
@@ -88,17 +88,24 @@ class Substitution(items:List[Item]) {
     case Cond(b, i1, i2) => Cond(subst(it,b),subst(it,i1),subst(it,i2))
   }
   // this version ignores the replacing of variables, the commented one replaces and cleans up the argument list
-  private def subst(i:Item,args:Arguments,l:List[Var]): Arguments = args
-  //    private def subst(it:Item,args:Arguments,vars:List[String]): Arguments = (it,args.vars) match {
-  //      case (_,Nil) => Arguments(Nil)
-  //      case (BItem(BVar(x),BVar(y)), (x2,"Bool") :: tl) if x == x2 =>
-  //        if (vars contains x2) Arguments(tl) // ignore variable if replacing by a known var
-  //        else Arguments((y,"Bool") :: tl)    // replace variable here
-  //      case (IItem(IVar(x),IVar(y)), (x2,"Int") :: tl) if x == x2 =>
-  //        if (vars contains x2) Arguments(tl) // ignore variable if replacing by a known var
-  //        else Arguments((y,"Int") :: tl)    // replace variable here
-  //      case (_,hd::tl) => Arguments(hd::subst(it,Arguments(tl),vars).vars)
-  //    }
+//  private def subst(i:Item,args:Arguments,l:List[Var]): Arguments = args
+  // this version removes parameters that are not used after substitution.
+  private def subst(it:Item,args:Arguments,vars:List[Var]): Arguments = (it,args.vars) match {
+    case (_,Nil) => Arguments(Nil)
+    case (BItem(x@BVar(_),y@BVar(_)), x2 :: tl) if x == x2 =>
+      if (vars contains x2) Arguments(tl) // ignore variable if replacing by a known var
+      else Arguments(y :: tl)    // replace variable here
+    case (x@IItem(IVar(_),y@IVar(_)), x2 :: tl) if x == x2 =>
+      if (vars contains x2) Arguments(tl) // ignore variable if replacing by a known var
+      else Arguments(y :: tl)    // replace variable here
+    case (BItem(x@BVar(_),BVal(_)), x2 :: tl) if x == x2 =>
+      Arguments(tl)    // variable not needed because it has a concrete value
+    case (IItem(x@IVar(_),IVal(_)), x2 :: tl) if x == x2 =>
+      Arguments(tl)    // variable not needed because it has a concrete value
+    case (_,hd::tl) =>
+      Arguments(hd::subst(it,Arguments(tl),vars).vars)
+    // TODO: if substituting x->(gen. expr), need to extract free variables and add them to arguments (if new)
+  }
 
 
   override def toString: String = items.mkString("[",", ","]")

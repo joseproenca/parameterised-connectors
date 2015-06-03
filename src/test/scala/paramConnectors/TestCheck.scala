@@ -76,8 +76,8 @@ class TestCheck {
               "∀x:Int,y:Int . 1^y -> 1^y | (1 * y) == (1 * y)",
               "∀x:Int,y:Int . y -> y")
     testCheck(IApp(IAbs(x,IAbs(y,"fifo"^x $ id^y)),3),
-              "∀y:Int . 1^3 -> 1^3 | (1 * 3) == (1 * 3)",
-              "∀y:Int . 3 -> 3")
+              "1^3 -> 1^3 | (1 * 3) == (1 * 3)",
+              "3 -> 3")
     testCheck(IAbs(x,(id^x) * (id^x)) $ IAbs(y,"fifo"^y),
               "∀x:Int,y:Int . (1^x) * (1^x) -> 1^(x + x) | ((1 * x) + (1 * x)) == (1 * (x + x))",
               "∀x:Int,y:Int . x + x -> x + x")
