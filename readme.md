@@ -10,3 +10,10 @@ Both connectors and types can be parameterised by integer and boolean variables,
 The type checking uses a mix of constraint unification and constraint solving.
 
 This project is a follow up and a simpler approach to the ideas experimented in https://github.com/joseproenca/connector-family, using a different construct to produce loops (traces instead of duals) and not considering connectors as parameters.
+
+```scala
+import paramConnectors.DSL._
+
+typeOf( lam(x:IVar,"fifo"^x) )
+\\ ∀x:Int . x -> x
+```
