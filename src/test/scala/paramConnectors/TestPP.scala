@@ -26,8 +26,8 @@ class TestPP {
     testPrint(Trace(2,"fifo" $ id),
               "Tr_2{fifo ; id}")
     testPrint(IAbs("x","fifo"^"x"),
-              "\\x.fifo^x")
+              "\\x.(fifo^x)")
     testPrint(Trace(2,("fifo"^3) $ (id * (id^3))),
-              "Tr_2{fifo^3 ; (id * id^3)}")
+              "Tr_2{(fifo^3) ; (id * (id^3))}")
   }
 }

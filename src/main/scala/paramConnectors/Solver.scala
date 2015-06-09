@@ -1,19 +1,11 @@
 package paramConnectors
 
-//import org.chocosolver.solver.search.strategy.ISF.*;
-
-import cc.redberry.core.context.OutputFormat
-import edu.jas.poly.Examples
-import org.chocosolver.solver.constraints.nary.cnf.LogOp
 import org.chocosolver.solver.{Solver => CSolver}
 import org.chocosolver.solver.constraints.{LogicalConstraintFactory, SatFactory, Constraint, IntConstraintFactory}
 import org.chocosolver.solver.search.strategy.IntStrategyFactory
-import org.chocosolver.solver.trace.Chatterbox
 import org.chocosolver.solver.variables.{BoolVar, IntVar, VariableFactory}
 import org.chocosolver.solver.constraints.LogicalConstraintFactory._
 import org.chocosolver.solver.constraints.IntConstraintFactory._
-
-import cc.redberry.core.parser.{ParseToken, Parser}
 
 
 /**
