@@ -1,6 +1,5 @@
 package paramConnectors
 
-import DSL._
 import Eval.interfaceSem
 
 /**

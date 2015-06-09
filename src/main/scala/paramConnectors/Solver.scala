@@ -1,7 +1,7 @@
 package paramConnectors
 
 import org.chocosolver.solver.{Solver => CSolver}
-import org.chocosolver.solver.constraints.{LogicalConstraintFactory, SatFactory, Constraint, IntConstraintFactory}
+import org.chocosolver.solver.constraints.Constraint
 import org.chocosolver.solver.search.strategy.IntStrategyFactory
 import org.chocosolver.solver.variables.{BoolVar, IntVar, VariableFactory}
 import org.chocosolver.solver.constraints.LogicalConstraintFactory._
@@ -13,6 +13,7 @@ import org.chocosolver.solver.constraints.IntConstraintFactory._
  */
 object Solver extends App {
 
+  class UnhandledOperException(s:String) extends RuntimeException(s)
 
   private var seed = 0
   private var boolVars: scala.collection.mutable.Map[String,BoolVar] = null
@@ -98,8 +99,10 @@ object Solver extends App {
       val c =  ifThenElse_reifiable(bv,ct,cf)
       solver.post(c)
       v
+    case Sum(_, f, t, _) =>
+      throw new UnhandledOperException(s"Case not handled - neither ${Show(f)} nor ${Show(t)} can have variables, in:\n  "+Show.apply(exp))
     case _ =>
-      throw new RuntimeException("Case not handled: "+Show.apply(exp))
+      throw new UnhandledOperException("Case not handled: "+Show.apply(exp))
   }
 
   private def combineIExpr(e1:IExpr,e2:IExpr,op:String): IntVar = (e1,e2) match {
@@ -110,21 +113,28 @@ object Solver extends App {
         case "+" => c = arithm(v, "=", i1+i2)
         case "-" => c = arithm(v, "=", i1-i2)
         case "*" => c = arithm(v, "=", i1*i2)
-        case _ => throw new RuntimeException("unexpected operator: "+op)
+        case _ => throw new UnhandledOperException("unexpected operator: "+op)
       }
       solver.post(c)
       v
     case (IVar(x),IVal(i)) => // x 'op' i
       val v = genFreshIVar()
-      solver.post(arithm(v,"=",getIVar(x),op,i))
+      op match {
+        case "+" | "-" =>
+          solver.post(arithm(v,"=",getIVar(x),op,i))
+        case "*" =>
+          solver.post(times(getIVar(x),i,v))
+      }
       v
     case (IVal(i),IVar(x)) => // i 'op' x (3-x --> -x + 3)
       val v = genFreshIVar()
       op match {
-        case "+" | "*" =>
+        case "+" =>
           solver.post(arithm(v,"=",getIVar(x),op,i))
         case "-" =>
           solver.post(arithm(v,"=",VariableFactory.minus(getIVar(x)),"+",i))
+        case "*" =>
+          solver.post(times(getIVar(x),i,v))
       }
       v
     case _ => // exp1 'op' exp2

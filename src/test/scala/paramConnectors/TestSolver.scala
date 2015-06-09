@@ -48,5 +48,7 @@ class TestSolver {
     testConstrX( EQ(x,4) & EQ(x+ 3, x + 3) , 4)
     //(x + (y - 1)) == ((y - 1) + 1))
     testConstrX( EQ(x + (y-1), (y-1) + 1), 1 )
+    // x*2 = 4
+    testConstrX ( EQ(x * 2, 4), 2)
   }
 }

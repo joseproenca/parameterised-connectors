@@ -2,7 +2,8 @@ package paramConnectors
 
 import org.junit.Test
 import org.junit.Assert._
-import DSL._
+import paramConnectors.DSL._
+import paramConnectors.Solver.UnhandledOperException
 import paramConnectors.TypeCheck.TypeCheckException
 
 /**
@@ -40,12 +41,15 @@ class TestCheck {
 //    assertEquals(constEval,show(Eval(rest)).toString)
   }
   def testTypeError(c:Connector) = try {
-    val t = TypeCheck.check(c)
-    val _ = Unify.getUnification(t.const)
-    throw new RuntimeException("Type error not found in " + Show(c) + " : " + t)
+    val oldtyp = TypeCheck.check(c)
+    val (subst,rest) = Unify.getUnification(oldtyp.const)
+    val _ = Solver.solve(Eval(subst(oldtyp)).const)
+
+    throw new RuntimeException("Type error not found in " + Show(c) + " : " + oldtyp)
   }
   catch {
     case _: TypeCheckException =>
+    case _: UnhandledOperException =>
     case e: Throwable => throw e
   }
 
@@ -93,28 +97,41 @@ class TestCheck {
     testCheck(lam(x,(id^x) * (id^x)) $ lam(y,"fifo"^y),
               "∀x:Int,y:Int . (1^x) * (1^x) -> 1^(x + x) | ((1 * x) + (1 * x)) == (1 * (x + x))",
               "∀x:Int,y:Int . x + x -> x + x")
-//    \Trc{n-1}{\swapc_{n-1,1} ~;~ \fifoc^{n}}
-    testCheck(lam(x,Trace(x - 1, Symmetry(x - 1,1) $ (fifo^x))),
-      "∀x:Int . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((1 + (x - 1)) == (1 * x))",
-      "∀x:Int . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((1 + (x - 1)) == x)")
     testCheck(lam(y,ExpX(x,y,id^x)),
       "∀y:Int . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x) | (Σ{x=1 to y}(x) == Σ{x=1 to y}(x)) & (Σ{x=1 to y}(x) == Σ{x=1 to y}(x))",
       "∀y:Int . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x)")
     testCheck(lam(y,ExpX(x,y,id^x)) (3),
       "6 -> 6 | (6 == Σ{x=1 to 3}(x)) & (6 == Σ{x=1 to 3}(x))",
       "6 -> 6")
-    testCheck( lam(x,ExpX(y,x,(id^(x-y)) * (swap^y) * (id^(x-y))) ) ,
-      "∀x:Int . Σ{y=1 to x}(((x - y) + (2 * y)) + (x - y)) -> Σ{y=1 to x}(((x - y) + (2 * y)) + (x - y)) | (Σ{y=1 to x}(((x - y) + (2 * y)) + (x - y)) == Σ{y=1 to x}(((x - y) + (2 * y)) + (x - y))) & (Σ{y=1 to x}(((x - y) + (2 * y)) + (x - y)) == Σ{y=1 to x}(((x - y) + (2 * y)) + (x - y)))",
-      "∀x:Int . Σ{y=1 to x}(((x - y) + (2 * y)) + (x - y)) -> Σ{y=1 to x}(((x - y) + (2 * y)) + (x - y))")
-    testCheck( lam(x,ExpX(y,x,(id^(x-y)) * (swap^y) * (id^(x-y))) ) (3) ,
-      "18 -> 18 | (18 == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y))) & (18 == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y)))",
-      "18 -> 18")
+    // from the paper
+    val seqfifo = lam(x,Trace(x - 1, Symmetry(x - 1,1) $ (fifo^x)))
+    val zip = lam(x,
+      Trace( 2*x*(x-1), Symmetry(2*x*(x-1),2*x) $
+        (((id^(x-y)) * (swap^y) * (id^(x-y)))^(y,x)) ))
+    val unzip = lam(x,
+      Trace( 2*x*(x-1), Symmetry(2*x*(x-1),2*x) $
+        (((id^(y+1)) * (swap^(x-y-1)) * (id^(y+1)))^(y,x)) ))
+    val sequencer = lam(z, (((dupl^z) $ unzip(z)) *
+                             Trace(z, Symmetry(z-1,1) $ ((fifo $ dupl) * ((fifo $ dupl)^(z-1))) $ unzip(z) ) ) $
+                           ((id^z) * (zip(z) $ (Prim("drain",2,0)^z))))
+    testCheck(seqfifo,
+      "∀x:Int . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((1 + (x - 1)) == (1 * x))",
+      "∀x:Int . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((1 + (x - 1)) == x)")
+    testCheck( zip(3) ,
+      "x3 -> x4 | ((x3 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == (x4 + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y))) & ((x4 + 12) == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y)))",
+      "x3 -> x4 | ((x3 + 12) == 18) & ((x4 + 12) == 18)")
+    testCheck ( unzip(4) ,
+      "x3 -> x4 | ((x3 + ((2 * 4) * (4 - 1))) == (((2 * 4) * (4 - 1)) + (2 * 4))) & ((x4 + ((2 * 4) * (4 - 1))) == (x4 + 24)) & (((2 * 4) + ((2 * 4) * (4 - 1))) == 32) & (32 == Σ{y=1 to 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1))) & ((x4 + 24) == Σ{y=1 to 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1)))",
+      "x3 -> x4 | ((x3 + 24) == 32) & ((x4 + 24) == 32)")
+
 
 
     testTypeError(lam(x,lam(x,"fifo"^(x+y))))   // var x is not fresh
     testTypeError(lam(x,lam(y,"fifo"^(x+z))))   // var z not found
     testTypeError(Trace(2,("fifo"^3) $ (id * (id^3)))) // unification fails (clearly false after eval)
     testTypeError(lam(x,id^x) $ lam(x,"fifo"^x))   // arguments not disjoint
+    testTypeError(zip)   // constraints with a sum until "x" - no variables are supported here.
+    testTypeError(unzip) // constraints with a sum until "x" - no variables are supported here.
 
   }
 
