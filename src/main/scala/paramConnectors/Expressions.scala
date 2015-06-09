@@ -44,3 +44,4 @@ case class BVar(x:String) extends BExpr with Var
 case class EQ(e1:IExpr,e2:IExpr) extends BExpr
 case class And(es:List[BExpr]) extends BExpr // special treatment for ands, because constraints in typechecking are a big conjunction
 case class Or(e1:BExpr,e2:BExpr) extends BExpr
+case class Not(e:BExpr) extends BExpr

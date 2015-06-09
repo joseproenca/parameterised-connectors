@@ -6,10 +6,10 @@ package paramConnectors
 
 private sealed abstract class Item
 private case class IItem(v:IVar,e:IExpr) extends Item {
-  override def toString = s"${v.x}:Int -> ${PrettyPrint.show(e)}"
+  override def toString = s"${v.x}:Int -> ${Show.apply(e)}"
 }
 private case class BItem(v:BVar,e:BExpr) extends Item {
-  override def toString = s"${v.x}:Bool -> ${PrettyPrint.show(e)}"
+  override def toString = s"${v.x}:Bool -> ${Show.apply(e)}"
 }
 
 /**
@@ -65,6 +65,7 @@ class Substitution(items:List[Item]) {
     case EQ(e1, e2)  => EQ(subst(i,e1),subst(i,e2))
     case And(es)     => And(es.map(subst(i,_)))
     case Or(e1, e2)  => Or(subst(i,e1),subst(i,e2))
+    case Not(e1)     => Not(subst(i,e1))
   }
   private def subst(i:Item,exp:IExpr): IExpr = exp match {
     case x@IVar(_) => i match {

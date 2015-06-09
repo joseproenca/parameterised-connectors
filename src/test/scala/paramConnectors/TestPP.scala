@@ -3,13 +3,12 @@ package paramConnectors
 import org.junit.Test
 import org.junit.Assert._
 import DSL._
-import PrettyPrint._
 
 class TestPP {
 
   def testPrint(c:Connector,res:String) {
 //    println(show(c))
-    assertEquals(res,show(c))
+    assertEquals(res,Show(c))
   }
 
   val c1 = "fifo"

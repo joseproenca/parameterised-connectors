@@ -5,6 +5,8 @@ sealed abstract class Connector {
   def *(that:Connector) = Par(this,that)
   def ^(that:IExpr) = Exp(that,this)
   def ^(x:IVar,that:IExpr) = ExpX(x,that,this)
+  def apply(that:IExpr): Connector = IApp(this,that)
+  def apply(that:BExpr): Connector = BApp(this,that)
 }
 
 case class Seq(c1:Connector, c2:Connector) extends Connector
@@ -18,6 +20,6 @@ case class Exp(a:IExpr, c:Connector) extends Connector
 case class ExpX(x:IVar, a:IExpr, c:Connector) extends Connector
 case class Choice(b:BExpr, c1:Connector, c2:Connector) extends Connector
 case class IAbs(x:IVar, c:Connector) extends Connector
-case class BAbs(x:IVar, c:Connector) extends Connector
+case class BAbs(x:BVar, c:Connector) extends Connector
 case class IApp(c:Connector, a:IExpr) extends Connector
 case class BApp(c:Connector, b:BExpr) extends Connector

@@ -63,6 +63,7 @@ object Unify {
     case And(Nil) => true
     case And(e2::es) => free(x,e2) && free(x,And(es))
     case Or(e1, e2) => free(x,e1) && free(x,e2)
+    case Not(e1) => free(x,e1)
   }
 
 //  def free(x:IVar,itf:Interface): Boolean = itf match {

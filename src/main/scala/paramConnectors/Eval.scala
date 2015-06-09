@@ -56,9 +56,12 @@ object Eval {
       case (IVal(a),IVal(b)) =>
         var res: IExpr = IVal(0)
         val ev = apply(newe)
-        for(y <- a until b)
+//        println(" ## eval of "+PrettyPrint.show(e))
+//        println(s" ## sum from $a to $b")
+        for(y <- a to b)
           res += Substitution(x , IVal(y))(ev)
-        res // e(a) + ... + e(b)
+//        println(" ## got new res (before simpl): "+PrettyPrint.show(res))
+        apply(res) // e(a) + ... + e(b)
       case (ev1,ev2) => Sum(x,apply(from),apply(to),apply(newe))
     }
     case ITE(b, ifTrue, ifFalse) => apply(b) match {
@@ -92,6 +95,11 @@ object Eval {
     case Or(e1, e2) => (apply(e1),apply(e2)) match {
       case (BVal(i1), BVal(i2)) => BVal(i1 || i2)
       case (a, b) => Or(a, b)
+    }
+    case Not(e2) => apply(e2) match {
+      case BVal(b) => BVal(!b)
+      case Not(e3) => e3
+      case e3 => Not(e3)
     }
   }
 

@@ -2,7 +2,6 @@ package paramConnectors
 
 import DSL._
 import Eval.interfaceSem
-import PrettyPrint.show
 
 /**
  * Created by jose on 17/05/15.
@@ -41,7 +40,7 @@ object TypeCheck {
       else throw new TypeCheckException(s"Context already contains bool variable $v (vars: $bools)")
 
     def addInt(v:IVar): Context = addInt(v.x)
-    def addBool(v:IVar): Context = addBool(v.x)
+    def addBool(v:BVar): Context = addBool(v.x)
 
     /** Number of variables. */
     def size = ints.size + bools.size
@@ -68,13 +67,13 @@ object TypeCheck {
       val Type(args1,i1,j1,phi1) = check(gamma,c1)
       val Type(args2,i2,j2,phi2) = check(gamma,c2)
       if (!(args1 disjoint args2))
-        throw new TypeCheckException(s"arguments of ${show(c1)} and ${show(c2)} are not disjoint.")
+        throw new TypeCheckException(s"arguments of ${Show(c1)} and ${Show(c2)} are not disjoint.")
       Type(args1 ++ args2, i1, j2, EQ(interfaceSem(j1),interfaceSem(i2)) & phi1 & phi2)
     case Par(c1, c2) =>
       val Type(args1,i1,j1,phi1) = check(gamma,c1)
       val Type(args2,i2,j2,phi2) = check(gamma,c2)
       if (!(args1 disjoint args2))
-        throw new TypeCheckException(s"arguments of ${show(c1)} and ${show(c2)} are not disjoint.")
+        throw new TypeCheckException(s"arguments of ${Show(c1)} and ${Show(c2)} are not disjoint.")
       Type(args1 ++ args2, i1 * i2, j1 * j2, phi1 & phi2)
     case Id(i:Interface) =>
       Type(Arguments(), i, i, BVal(b=true))
@@ -135,30 +134,24 @@ object TypeCheck {
 
 
   def check(gamma:Context,a:IExpr): Unit = a match {
-    case IVal(_) =>
-    case v@IVar(_) => if (!gamma(v)) throw new TypeCheckException(s"$v:Int not in the context ($gamma)")
+    case IVal(_)     =>
+    case v@IVar(_)   => if (!gamma(v)) throw new TypeCheckException(s"$v:Int not in the context ($gamma)")
     case Add(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Sub(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Mul(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Sum(x,from,to,e) => check(gamma,from) ; check(gamma,to) ; check(gamma.addInt(x),e)
-    case ITE(b,ift,iff) => check(gamma,b) ; check(gamma,ift) ; check(gamma,iff)
+    case ITE(b,ift,iff)   => check(gamma,b) ; check(gamma,ift) ; check(gamma,iff)
   }
 
   def check(gamma:Context,b:BExpr): Unit = b match {
-    case BVal(_) =>
+    case BVal(_)     =>
     case v@BVar(x)   => if (!gamma(v)) throw new TypeCheckException(s"$v:Bool not in the context ($gamma)")
 //    case IEQ(e1, e2) => check(gamma,e1); check(gamma,e2)
     case EQ(e1, e2)  => check(gamma,e1); check(gamma,e2)
-    case And(Nil) =>
-    case And(e::es) => check(gamma,e); check(gamma,And(es))
+    case And(Nil)    =>
+    case And(e::es)  => check(gamma,e); check(gamma,And(es))
     case Or(e1, e2)  => check(gamma,e1); check(gamma,e2)
+    case Not(e1)     => check(gamma,e1)
   }
-
-//  def check(gamma:Context,itf:Interface): Unit = itf match {
-//    case Tensor(i, j)    => check(gamma,i); check(gamma,j)
-//    case Port(a)         => check(gamma,a)
-//    case Repl(a, i)      => check(gamma,a); check(gamma,i)
-//    case Cond(b, i1, i2) => check(gamma,b); check(gamma,i1); check(gamma,i2)
-//  }
 
 }

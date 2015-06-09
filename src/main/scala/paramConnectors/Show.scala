@@ -1,65 +1,67 @@
 package paramConnectors
 
-object PrettyPrint {
-  def show(con: Connector): String = con match {
+object Show {
+  def apply(con: Connector): String = con match {
     case Seq(c1, c2)    => s"${showP(c1)} ; ${showP(c2)}"
     case Par(c1, c2)    => s"${showP(c1)} * ${showP(c2)}"
     case Id(_)          => "id"
-    case Symmetry(i, j) => s"swap(${show(i)},${show(j)})"
-    case Trace(i, c)    => s"Tr_${show(i)}{${show(c)}}"
+    case Symmetry(i, j) => s"swap(${apply(i)},${apply(j)})"
+    case Trace(i, c)    => s"Tr_${apply(i)}{${apply(c)}}"
     case Prim(name,_,_) => name
     case Exp(a, c)  => s"${showP(c)}^${showP(a)}"
-    case ExpX(x, a, c)  => s"${showP(c)}^(${show(x)},${show(a)})"
+    case ExpX(x, a, c)  => s"${showP(c)}^{${apply(x)}<${apply(a)}}"
     case Choice(b, c1, c2) => s"if ${showP(c1)} then ${showP(c1)} else ${showP(c2)}"
-    case IAbs(x, c)     => s"\\${show(x)}.${showP(c)}"
-    case BAbs(x, c)     => s"\\${show(x)}.${showP(c)}"
-    case IApp(c, a)     => s"${showP(c)}(${show(a)})"
-    case BApp(c, b)     => s"${showP(c)}(${show(b)})"
+    case IAbs(x, c)     => s"\\${apply(x)}.${showP(c)}"
+    case BAbs(x, c)     => s"\\${apply(x)}.${showP(c)}"
+    case IApp(c, a)     => s"${showP(c)}(${apply(a)})"
+    case BApp(c, b)     => s"${showP(c)}(${apply(b)})"
   }
   private def showP(con:Connector): String = con match {
-    case Seq(_,_) | Par(_,_) | Choice(_,_,_) | IAbs(_,_) | BAbs(_,_) => s"(${show(con)})"
-    case _ => show(con)
+    case Seq(_,_) | Par(_,_) | Choice(_,_,_) | IAbs(_,_) | BAbs(_,_) |
+         Exp(_,_) | ExpX(_,_,_) => s"(${apply(con)})"
+    case _ => apply(con)
   }
 
-  def show(itf: Interface): String = itf match {
+  def apply(itf: Interface): String = itf match {
     case Tensor(i, j)  => s"${showP(i)} * ${showP(j)}"
-    case Port(a)       => show(a)
+    case Port(a)       => apply(a)
     case Repl(i, a)    => s"${showP(i)}^${showP(a)}"
     case Cond(b, i, j) => s"${showP(i)} +${showP(b)}+ ${showP(j)}"
   }
   private def showP(itf:Interface):String = itf match {
     case Port(a) => showP(a)
-    case _ => s"(${show(itf)})"
+    case _ => s"(${apply(itf)})"
   }
 
-  def show(exp: IExpr): String = exp match {
+  def apply(exp: IExpr): String = exp match {
     case IVal(n) => n.toString
     case IVar(x) => x
     case Add(e1,e2) => s"${showP(e1)} + ${showP(e2)}"
     case Sub(e1,e2) => s"${showP(e1)} - ${showP(e2)}"
     case Mul(e1,e2) => s"${showP(e1)} * ${showP(e2)}"
-    case Sum(x,from,to,e) => s"Σ{${x.x}=${show(from)} until ${showP(to)}}(${show(e)})"
+    case Sum(x,from,to,e) => s"Σ{${x.x}=${apply(from)} to ${showP(to)}}(${apply(e)})"
     case ITE(b,ifTrue,ifFalse) =>
       s"if ${showP(b)} then ${showP(ifTrue)} else ${showP(ifFalse)}"
   }
   private def showP(exp:IExpr):String = exp match {
-    case Add(_,_) | Sub(_,_) | Mul(_,_) => s"(${show(exp)})"
-    case _ => show(exp)
+    case Add(_,_) | Sub(_,_) | Mul(_,_) => s"(${apply(exp)})"
+    case _ => apply(exp)
   }
 
 
-  def show(exp: BExpr): String = exp match {
+  def apply(exp: BExpr): String = exp match {
     case BVal(b)     => b.toString
     case BVar(x)     => x
     case EQ(e1, e2)  => s"${showP(e1)} == ${showP(e2)}"
     case And(Nil)    => ""
-    case And(e::Nil) => show(e)
+    case And(e::Nil) => apply(e)
     case And(es)     => es.map(showP(_)).mkString(" & ")
     case Or(e1, e2)  => s"${showP(e1)} | ${showP(e2)}"
+    case Not(e1)     => s"!${showP(e1)}"
   }
   private def showP(exp:BExpr):String = exp match {
-    case BVal(_) | BVar(_) => show(exp)
-    case _ => s"(${show(exp)})"
+    case BVal(_) | BVar(_) => apply(exp)
+    case _ => s"(${apply(exp)})"
   }
 
 }

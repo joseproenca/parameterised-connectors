@@ -15,8 +15,9 @@ package paramConnectors
 case class Type(args:Arguments, i:Interface, j:Interface, const:BExpr) {
   override def toString =
     (if (args.vars.isEmpty) "" else "∀"+args.toString+" . ") +
-      PrettyPrint.show(i) + " -> "+ PrettyPrint.show(j) +
-      (if (const == BVal(b=true)) "" else " | " + PrettyPrint.show(const) )
+      Show.apply(i) + " -> "+ Show.apply(j) +
+      (if (const == BVal(b=true) || const == And(List())) ""
+       else " | " + Show.apply(const) )
 }
 
 // Sometimes order is important (arguments of applications)
