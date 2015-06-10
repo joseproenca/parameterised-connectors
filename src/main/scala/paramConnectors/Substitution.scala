@@ -20,9 +20,22 @@ class Substitution(items:List[Item]) {
 //  private implicit def pair2IItem(p:(IVar,IExpr)): IItem = IItem(p._1,p._2)
 //  private implicit def pair2BItem(p:(BVar,BExpr)): BItem = BItem(p._1,p._2)
 
-//  def +(i:Item) = new Substitution(i::items)
-  def +(x:BVar,e:BExpr) = new Substitution(BItem(x,e)::items)
-  def +(x:IVar,e:IExpr) = new Substitution(IItem(x,e)::items)
+  private var isGeneral: Boolean = true
+  def setConcrete(): Unit = {
+    isGeneral = false
+  }
+
+  //  def +(i:Item) = new Substitution(i::items)
+  def +(x:BVar,e:BExpr) = {
+    val res = new Substitution(BItem(x,e)::items)
+    if (!isGeneral) res.setConcrete()
+    res
+  }
+  def +(x:IVar,e:IExpr) = {
+    val res = new Substitution(IItem(x,e)::items)
+    if (!isGeneral) res.setConcrete()
+    res
+  }
 
   def apply(exp:BExpr): BExpr = {
     var prev = exp
@@ -43,7 +56,7 @@ class Substitution(items:List[Item]) {
     prev
   }
   def apply(typ:Type): Type = {
-    var Type(args,i,j,const) = typ
+    var Type(args,i,j,const,true) = typ
     for (it <- items) {
       val vars = args.vars
       args = subst(it, args, vars) // select dummy subst (just returns args!) or smarter
@@ -51,7 +64,10 @@ class Substitution(items:List[Item]) {
       j = subst(it, j)
       const = subst(it, const)
     }
-    Type(args,i,j,const)
+    if (isGeneral)
+      Type(args,i,j,const,isGeneral = true)
+    else
+      Type(args,i,j,const,isGeneral = false)
   }
 
 
@@ -109,7 +125,8 @@ class Substitution(items:List[Item]) {
   }
 
 
-  override def toString: String = items.mkString("[",", ","]")
+  override def toString: String =
+    items.mkString("[",", ","]") + (if (isGeneral) "" else "-concrete")
 
 }
 

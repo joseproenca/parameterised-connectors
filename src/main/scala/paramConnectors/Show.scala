@@ -6,7 +6,7 @@ object Show {
     case Par(c1, c2)    => s"${showP(c1)} * ${showP(c2)}"
     case Id(_)          => "id"
     case Symmetry(i, j) => s"swap(${apply(i)},${apply(j)})"
-    case Trace(i, c)    => s"Tr_${apply(i)}{${apply(c)}}"
+    case Trace(i, c)    => s"Tr_${showP(i)}{${apply(c)}}"
     case Prim(name,_,_) => name
     case Exp(a, c)  => s"${showP(c)}^${showP(a)}"
     case ExpX(x, a, c)  => s"${showP(c)}^{${apply(x)}<${apply(a)}}"
@@ -66,7 +66,8 @@ object Show {
 
 
   def apply(typ:Type): String =
-    (if (typ.args.vars.isEmpty) "" else "∀"+typ.args.toString+" . ") +
+    (if (typ.isGeneral) "" else "© ") +
+      (if (typ.args.vars.isEmpty) "" else "∀"+typ.args.toString+" . ") +
       apply(typ.i) + " -> "+ apply(typ.j) +
       (if (typ.const == BVal(b=true) || typ.const == And(List())) ""
       else " | " + apply(typ.const) )

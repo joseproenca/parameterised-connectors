@@ -12,7 +12,7 @@ package paramConnectors
  * @param j output interface
  * @param const constraints that must hold to be a well-typed connector
  */
-case class Type(args:Arguments, i:Interface, j:Interface, const:BExpr) {
+case class Type(args:Arguments, i:Interface, j:Interface, const:BExpr, isGeneral:Boolean = true) {
   // hides the details to the developer/user
   override def toString = Show(this)
 }

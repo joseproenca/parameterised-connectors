@@ -63,69 +63,69 @@ object TypeCheck {
 
   private def check(gamma:Context, con:Connector): Type = con match {
     case Seq(c1, c2) =>
-      val Type(args1,i1,j1,phi1) = check(gamma,c1)
-      val Type(args2,i2,j2,phi2) = check(gamma,c2)
+      val Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
+      val Type(args2,i2,j2,phi2,isG2) = check(gamma,c2)
       if (!(args1 disjoint args2))
         throw new TypeCheckException(s"arguments of ${Show(c1)} and ${Show(c2)} are not disjoint.")
-      Type(args1 ++ args2, i1, j2, EQ(interfaceSem(j1),interfaceSem(i2)) & phi1 & phi2)
+      Type(args1 ++ args2, i1, j2, EQ(interfaceSem(j1),interfaceSem(i2)) & phi1 & phi2, isG1 && isG2)
     case Par(c1, c2) =>
-      val Type(args1,i1,j1,phi1) = check(gamma,c1)
-      val Type(args2,i2,j2,phi2) = check(gamma,c2)
+      val Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
+      val Type(args2,i2,j2,phi2,isG2) = check(gamma,c2)
       if (!(args1 disjoint args2))
         throw new TypeCheckException(s"arguments of ${Show(c1)} and ${Show(c2)} are not disjoint.")
-      Type(args1 ++ args2, i1 * i2, j1 * j2, phi1 & phi2)
+      Type(args1 ++ args2, i1 * i2, j1 * j2, phi1 & phi2, isG1 && isG2)
     case Id(i:Interface) =>
       Type(Arguments(), i, i, BVal(b=true))
     case Symmetry(i, j) =>
       Type(Arguments(), i*j, j*i, BVal(b=true))
     case Trace(i, c) =>
-      val Type(args,i1,j1,phi) = check(gamma,c)
+      val Type(args,i1,j1,phi,isG) = check(gamma,c)
       val x = Port(IVar(fresh())) // gen unique name
       val y = Port(IVar(fresh())) // gen unique name
       Type(args, x, y, EQ(interfaceSem(x * i), interfaceSem(i1)) &
-                       EQ(interfaceSem(y * i), interfaceSem(j1)) & phi)
+                       EQ(interfaceSem(y * i), interfaceSem(j1)) & phi, isG)
     case Prim(name,i,j) =>
-      Type(Arguments(), i, j, BVal(b=true))
+      Type(Arguments(), i, j, BVal(b=true), isGeneral=true)
     case Exp(a, c) =>
       check(gamma,a)
-      val Type(args,i,j,phi) = check(gamma,c)
-      Type(args, Repl(i,a), Repl(j,a), phi)
+      val Type(args,i,j,phi,isG) = check(gamma,c)
+      Type(args, Repl(i,a), Repl(j,a), phi,isG)
     // TRICKY CASE - add complex constraint!
     case ExpX(x, a, c) =>
       check(gamma,a)
-      val Type(args,i,j,phi) = check(gamma.addInt(x),c)
+      val Type(args,i,j,phi,isG) = check(gamma.addInt(x),c)
       val ci = Sum(x,IVal(1),a,interfaceSem(Eval(i)))
       val cj = Sum(x,IVal(1),a,interfaceSem(Eval(j)))
       val newi = IVar(fresh()) // gen unique name
       val newj = IVar(fresh()) // gen unique name
-      Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & phi)
+      Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & phi,isG)
     // END OF TRICKY CASE
     case Choice(b, c1, c2) =>
-      val Type(args1,i1,j1,phi1) = check(gamma,c1)
-      val Type(args2,i2,j2,phi2) = check(gamma,c2)
+      val Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
+      val Type(args2,i2,j2,phi2,isG2) = check(gamma,c2)
       check(gamma,b)
-      Type(args1++args2, Cond(b,i1,i2), Cond(b,j1,j2), phi1 & phi2)
+      Type(args1++args2, Cond(b,i1,i2), Cond(b,j1,j2), phi1 & phi2,isG1 && isG2)
     case IAbs(x, c) =>
-      val Type(args,i,j,phi) = check(gamma.addInt(x),c)
-      Type(args + x ,i,j,phi)
+      val Type(args,i,j,phi,isG) = check(gamma.addInt(x),c)
+      Type(args + x ,i,j,phi,isG)
     case BAbs(x, c) =>
-      val Type(args,i,j,phi) = check(gamma.addBool(x),c)
-      Type(args + x ,i,j,phi)
+      val Type(args,i,j,phi,isG) = check(gamma.addBool(x),c)
+      Type(args + x ,i,j,phi,isG)
     case IApp(c, a) =>
-      val Type(args,i,j,phi) = check(gamma,c)
+      val Type(args,i,j,phi,isG) = check(gamma,c)
       args.vars.head match {
         case x@IVar(_) =>
           val s = Substitution(x, a)
-          Type(Arguments(args.vars.tail),s(i),s(j),s(phi))
+          Type(Arguments(args.vars.tail),s(i),s(j),s(phi),isG)
         case x =>
           throw new TypeCheckException(s"application: expected 'int', found ${x.getClass}.")
       }
     case BApp(c, b) =>
-      val Type(args,i,j,phi) = check(gamma,c)
+      val Type(args,i,j,phi,isG) = check(gamma,c)
       args.vars.head match {
         case x@BVar(_) =>
           val s = Substitution(x, b)
-          Type(Arguments(args.vars.tail),s(i),s(j),s(phi))
+          Type(Arguments(args.vars.tail),s(i),s(j),s(phi),isG)
         case x =>
           throw new TypeCheckException(s"application: expected 'bool', found ${x.getClass}.")
       }

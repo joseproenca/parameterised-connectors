@@ -111,5 +111,5 @@ object Eval {
    * @return
    */
   def apply(t:Type): Type =
-    Type(t.args,apply(t.i),apply(t.j),apply(t.const))
+    Type(t.args,apply(t.i),apply(t.j),apply(t.const),t.isGeneral)
 }
