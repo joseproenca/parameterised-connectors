@@ -13,11 +13,8 @@ package paramConnectors
  * @param const constraints that must hold to be a well-typed connector
  */
 case class Type(args:Arguments, i:Interface, j:Interface, const:BExpr) {
-  override def toString =
-    (if (args.vars.isEmpty) "" else "∀"+args.toString+" . ") +
-      Show.apply(i) + " -> "+ Show.apply(j) +
-      (if (const == BVal(b=true) || const == And(List())) ""
-       else " | " + Show.apply(const) )
+  // hides the details to the developer/user
+  override def toString = Show(this)
 }
 
 // Sometimes order is important (arguments of applications)
@@ -37,8 +34,8 @@ case class Arguments(vars:List[Var]) {
 
   override def toString = //vars.map(x=>x._1+":"+x._2).mkString(",")
     vars.map {
-      case BVar(x) => x + ":Bool"
-      case IVar(x) => x + ":Int"
+      case BVar(x) => x + ":B"
+      case IVar(x) => x + ":I"
       case x => throw new RuntimeException(s"Unknown variable $x : ${x.getClass}.")
     }.mkString(",")
 }

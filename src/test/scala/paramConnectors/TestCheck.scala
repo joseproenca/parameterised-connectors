@@ -27,17 +27,17 @@ class TestCheck {
     val typev2 = Eval(newsubst.get(typev))
     // print and check
     println(Show(c))
-    println(" - type(pre-subst): "+oldtyp)
-    println(" - type(pos-subst): "+typ)
-    println(" - type(pos-eval) : "+typev)
-    println(" - type(pos-solv) : "+typev2)
+    println(" - type(pre-subst): "+Show(oldtyp))
+    println(" - type(pos-subst): "+Show(typ))
+    println(" - type(pos-eval) : "+Show(typev))
+    println(" - type(pos-solv) : "+Show(typev2))
 //    println(" - rest(eval-alws): "+show(rest))
     println(" - subst:  "+subst)
     println(" - subst2: "+newsubst)
 //    println(" - solve!: "+typev.const+"\n --"+Solver.solve(typev.const))
 //    println(" - apply unif: "+(subst(typ)))
-    assertEquals(typString,typ.toString)
-    assertEquals(evalType,typev.toString)
+    assertEquals(typString,Show(typ))
+    assertEquals(evalType,Show(typev))
 //    assertEquals(constEval,show(Eval(rest)).toString)
   }
   def testTypeError(c:Connector) = try {
@@ -53,9 +53,9 @@ class TestCheck {
     case e: Throwable => throw e
   }
 
-  val x: IVar = "x"
-  val y: IVar = "y"
-  val z: IVar = "z"
+  val x: I = "x"
+  val y: I = "y"
+  val z: I = "z"
 
   @Test def TestTypeCheck() {
     testCheck( fifo^3,
@@ -76,9 +76,9 @@ class TestCheck {
     testCheck(Trace(2,id*id*id),
               "x1 -> x2 | ((x1 + 2) == ((1 + 1) + 1)) & ((x2 + 2) == ((1 + 1) + 1))",
               "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)")
-    testCheck(lam(x,dupl^x),
-              "∀x:Int . 1^x -> 2^x",
-              "∀x:Int . x -> 2 * x")
+    testCheck(lam("x":I,dupl^x),
+              "∀x:I . 1^x -> 2^x",
+              "∀x:I . x -> 2 * x")
     testCheck(Trace(2,("fifo"^3) $ (id * (id^2))),
               "x1 -> x2 | ((x1 + 2) == (1 * 3)) & ((x2 + 2) == (1 + (1 * 2))) & ((1 * 3) == (1 + (1 * 2)))",
               "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)")
@@ -89,17 +89,17 @@ class TestCheck {
               "1^2 -> 1^2",
               "2 -> 2")
     testCheck(lam(x,lam(y,"fifo"^x $ id^y)),
-              "∀x:Int,y:Int . 1^y -> 1^y | (1 * y) == (1 * y)",
-              "∀x:Int,y:Int . y -> y")
+              "∀x:I,y:I . 1^y -> 1^y | (1 * y) == (1 * y)",
+              "∀x:I,y:I . y -> y")
     testCheck(lam(x,lam(y,"fifo"^x $ id^y)) (3),
               "1^3 -> 1^3 | (1 * 3) == (1 * 3)",
               "3 -> 3")
     testCheck(lam(x,(id^x) * (id^x)) $ lam(y,"fifo"^y),
-              "∀x:Int,y:Int . (1^x) * (1^x) -> 1^(x + x) | ((1 * x) + (1 * x)) == (1 * (x + x))",
-              "∀x:Int,y:Int . x + x -> x + x")
+              "∀x:I,y:I . (1^x) * (1^x) -> 1^(x + x) | ((1 * x) + (1 * x)) == (1 * (x + x))",
+              "∀x:I,y:I . x + x -> x + x")
     testCheck(lam(y,ExpX(x,y,id^x)),
-      "∀y:Int . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x) | (Σ{x=1 to y}(x) == Σ{x=1 to y}(x)) & (Σ{x=1 to y}(x) == Σ{x=1 to y}(x))",
-      "∀y:Int . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x)")
+      "∀y:I . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x) | (Σ{x=1 to y}(x) == Σ{x=1 to y}(x)) & (Σ{x=1 to y}(x) == Σ{x=1 to y}(x))",
+      "∀y:I . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x)")
     testCheck(lam(y,ExpX(x,y,id^x)) (3),
       "6 -> 6 | (6 == Σ{x=1 to 3}(x)) & (6 == Σ{x=1 to 3}(x))",
       "6 -> 6")
@@ -115,8 +115,8 @@ class TestCheck {
                              Trace(z, Symmetry(z-1,1) $ ((fifo $ dupl) * ((fifo $ dupl)^(z-1))) $ unzip(z) ) ) $
                            ((id^z) * (zip(z) $ (Prim("drain",2,0)^z))))
     testCheck(seqfifo,
-      "∀x:Int . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((1 + (x - 1)) == (1 * x))",
-      "∀x:Int . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((1 + (x - 1)) == x)")
+      "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((1 + (x - 1)) == (1 * x))",
+      "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((1 + (x - 1)) == x)")
     testCheck( zip(3) ,
       "x3 -> x4 | ((x3 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == (x4 + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y))) & ((x4 + 12) == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y)))",
       "x3 -> x4 | ((x3 + 12) == 18) & ((x4 + 12) == 18)")

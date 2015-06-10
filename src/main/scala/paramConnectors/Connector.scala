@@ -7,6 +7,9 @@ sealed abstract class Connector {
   def ^(x:IVar,that:IExpr) = ExpX(x,that,this)
   def apply(that:IExpr): Connector = IApp(this,that)
   def apply(that:BExpr): Connector = BApp(this,that)
+
+  // hides the details to the developer/user
+  override def toString = Show(this)
 }
 
 case class Seq(c1:Connector, c2:Connector) extends Connector

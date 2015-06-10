@@ -64,4 +64,12 @@ object Show {
     case _ => s"(${apply(exp)})"
   }
 
+
+  def apply(typ:Type): String =
+    (if (typ.args.vars.isEmpty) "" else "∀"+typ.args.toString+" . ") +
+      apply(typ.i) + " -> "+ apply(typ.j) +
+      (if (typ.const == BVal(b=true) || typ.const == And(List())) ""
+      else " | " + apply(typ.const) )
+
+
 }

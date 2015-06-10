@@ -13,14 +13,22 @@ object DSL {
   implicit def int2IExp(n:Int): IExpr= IVal(n)
   implicit def int2Interface(n:Int): Interface = Port(IVal(n))
   implicit def exp2Interface(e:IExpr): Interface= Port(e)
-  def lam(x:IVar,c:Connector) = IAbs(x,c)
-  def lam(x:BVar,c:Connector) = BAbs(x,c)
+
+  type I  = IVar
+  type B = BVar
+  def lam(x:I,c:Connector) = IAbs(x,c)
+  def lam(x:B,c:Connector) = BAbs(x,c)
+
+  val Sym = Symmetry
+  val Tr = Trace
+
   val swap = Symmetry(1,1)
   val id = Id(1)
   val fifo = Prim("fifo",1,1)
   val lossy = Prim("lossy",1,1)
   val dupl = Prim("dupl",1,2)
   val merger = Prim("merger",2,1)
+
 
 
   // overall methods to typecheck

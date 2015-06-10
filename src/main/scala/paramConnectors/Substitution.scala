@@ -6,10 +6,10 @@ package paramConnectors
 
 private sealed abstract class Item
 private case class IItem(v:IVar,e:IExpr) extends Item {
-  override def toString = s"${v.x}:Int -> ${Show.apply(e)}"
+  override def toString = s"${v.x}:I -> ${Show.apply(e)}"
 }
 private case class BItem(v:BVar,e:BExpr) extends Item {
-  override def toString = s"${v.x}:Bool -> ${Show.apply(e)}"
+  override def toString = s"${v.x}:B -> ${Show.apply(e)}"
 }
 
 /**
