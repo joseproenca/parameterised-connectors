@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 import DSL._
 
-class TestPP {
+class TestShow {
 
   def testPrint(c:Connector,res:String) {
 //    println(show(c))

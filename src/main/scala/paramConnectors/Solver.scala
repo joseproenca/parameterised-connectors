@@ -21,6 +21,10 @@ object Solver extends App {
   private var solver: CSolver = null
 
   def solve(bExpr: BExpr): Option[Substitution] = {
+
+    if (bExpr == BVal(true))
+      return Some(Substitution())
+
     seed = 0
 //    boolVars.clear()
 //    intVars.clear()

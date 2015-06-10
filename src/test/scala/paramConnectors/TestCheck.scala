@@ -20,10 +20,10 @@ class TestCheck {
     val typ = subst(oldtyp)
     // 4 - evaluate (simplify) resulting type (eval also in some parts of the typecheck).
     val typev = Eval(typ)
-    // 4 - solve rest of the constraints
+    // 5 - solve rest of the constraints
     val newsubst = Solver.solve(typev.const)
     if (!newsubst.isDefined) throw new TypeCheckException("Solver failed")
-    // 5 - apply the new substitution to the previous type and eval
+    // 6 - apply the new substitution to the previous type and eval
     val typev2 = Eval(newsubst.get(typev))
     // print and check
     println(Show(c))
