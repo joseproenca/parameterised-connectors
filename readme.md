@@ -34,15 +34,23 @@ val repl = Prim("repl",1,2) // 1 input, 2 outputs
 typeOf( lam(x,fifo^x)(2) )
 // 2 -> 2
 
-typeOf(   lam(x,(id^x) * (id^x)) $ lam(n,fifo^n) )
+typeOf(   lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 // ∀x:I,n:I . x + x -> x + x
-typeTree( lam(x,(id^x) * (id^x)) $ lam(n,fifo^n) )
+typeTree( lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 // ∀x:I,n:I . x + x -> n | (x + x) == n
 
-typeOf(    lam(x,Tr(x - 1, Sym(x - 1,1) $ (fifo^x))))
+typeOf(    lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
 // 1 -> 1
-typeUnify( lam(x,Tr(x - 1, Sym(x - 1,1) $ (fifo^x))))
+typeUnify( lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
 // ∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1))
 //                 & ((x2 + (x - 1)) == x)
 //                 & ((1 + (x - 1)) == x)
+
+typeOf( lam(y, (id^x)^x<y) )
+// ∀y:I . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x)
+
+typeOf(   lam(y, (id^x)^x<y)(3) )
+// 6 -> 6
+typeTree( lam(y, (id^x)^x<y)(3) )
+// x1 -> x2 | (x1 == 6) & (x2 == 6)
 ```

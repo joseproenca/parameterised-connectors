@@ -14,7 +14,9 @@ sealed abstract class IExpr extends Expr {
 }
 
 case class IVal(n:Int) extends IExpr
-case class IVar(x:String) extends IExpr with Var
+case class IVar(x:String) extends IExpr with Var {
+  def <(to:IExpr) = ExpWrap(this,to) // helper to DSL
+}
 case class Add(e1:IExpr,e2:IExpr) extends IExpr
 case class Sub(e1:IExpr,e2:IExpr) extends IExpr
 case class Mul(e1:IExpr,e2:IExpr) extends IExpr
@@ -36,6 +38,11 @@ sealed abstract class BExpr extends Expr {
     case _ => And(List(this,that))
   }
   def |(that:BExpr) = Or(this,that)
+  def ?(that:IExpr) = new IfWrap(this,that)
+}
+
+class IfWrap(ifc:BExpr,thenc:IExpr) {
+  def :?(elsec:IExpr) = ITE(ifc,thenc,elsec)
 }
 
 case class BVal(b:Boolean) extends BExpr

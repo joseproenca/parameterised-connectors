@@ -73,47 +73,54 @@ class TestCheck {
     testCheck(id*id*id,
               "(1 * 1) * 1 -> (1 * 1) * 1",
               "3 -> 3")
-    testCheck(Trace(2,id*id*id),
+    testCheck(Tr(2,id*id*id),
               "x1 -> x2 | ((x1 + 2) == ((1 + 1) + 1)) & ((x2 + 2) == ((1 + 1) + 1))",
               "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)")
     testCheck(lam("x":I,dupl^x),
               "∀x:I . 1^x -> 2^x",
               "∀x:I . x -> 2 * x")
-    testCheck(Trace(2,("fifo"^3) $ (id * (id^2))),
+    testCheck(Tr(2,("fifo"^3) & (id * (id^2))),
               "x1 -> x2 | ((x1 + 2) == (1 * 3)) & ((x2 + 2) == (1 + (1 * 2))) & ((1 * 3) == (1 + (1 * 2)))",
               "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)")
-    testCheck(("fifo"^3) $ (id * (id^2)),
+    testCheck(("fifo"^3) & (id * (id^2)),
               "1^3 -> 1 * (1^2) | (1 * 3) == (1 + (1 * 2))",
               "3 -> 3")
     testCheck(lam(x,"fifo"^x)(2),
               "1^2 -> 1^2",
               "2 -> 2")
-    testCheck(lam(x,lam(y,"fifo"^x $ id^y)),
+    testCheck(lam(x,lam(y,("fifo"^x) & (id^y))),
               "∀x:I,y:I . 1^y -> 1^y | (1 * y) == (1 * y)",
               "∀x:I,y:I . y -> y")
-    testCheck(lam(x,lam(y,"fifo"^x $ id^y)) (3),
+    testCheck(lam(x,lam(y,("fifo"^x) & (id^y))) (3),
               "1^3 -> 1^3 | (1 * 3) == (1 * 3)",
               "3 -> 3")
-    testCheck(lam(x,(id^x) * (id^x)) $ lam(y,"fifo"^y),
+    testCheck(lam(x, (id^x) * (id^x)) & lam(y,"fifo"^y),
               "∀x:I,y:I . (1^x) * (1^x) -> 1^(x + x) | ((1 * x) + (1 * x)) == (1 * (x + x))",
               "∀x:I,y:I . x + x -> x + x")
-    testCheck(lam(y,ExpX(x,y,id^x)),
+    testCheck(lam(y, (id^x)^x<y),
       "∀y:I . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x) | (Σ{x=1 to y}(x) == Σ{x=1 to y}(x)) & (Σ{x=1 to y}(x) == Σ{x=1 to y}(x))",
       "∀y:I . Σ{x=1 to y}(x) -> Σ{x=1 to y}(x)")
-    testCheck(lam(y,ExpX(x,y,id^x)) (3),
+    testCheck(lam(y, (id^x)^x<y) (3),
       "6 -> 6 | (6 == Σ{x=1 to 3}(x)) & (6 == Σ{x=1 to 3}(x))",
       "6 -> 6")
+    // conditionals
+    testCheck( lam("a":B, Choice("a",id,dupl)) ,
+      "∀a:B . 1 +a+ 1 -> 1 +a+ 2",
+      "∀a:B . 1 -> if a then 1 else 2")
+    testCheck( lam("a":B, fifo^("a" ? 2 :? 3)),
+      "∀a:B . 1^(if a then 2 else 3) -> 1^(if a then 2 else 3)",
+      "∀a:B . if a then 2 else 3 -> if a then 2 else 3")
     // from the paper
-    val seqfifo = lam(x,Trace(x - 1, Symmetry(x - 1,1) $ (fifo^x)))
+    val seqfifo = lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x)))
     val zip = lam(x,
-      Trace( 2*x*(x-1), Symmetry(2*x*(x-1),2*x) $
+      Tr( 2*x*(x-1), Sym(2*x*(x-1),2*x) &
         (((id^(x-y)) * (swap^y) * (id^(x-y)))^(y,x)) ))
     val unzip = lam(x,
-      Trace( 2*x*(x-1), Symmetry(2*x*(x-1),2*x) $
+      Tr( 2*x*(x-1), Sym(2*x*(x-1),2*x) &
         (((id^(y+1)) * (swap^(x-y-1)) * (id^(y+1)))^(y,x)) ))
-    val sequencer = lam(z, (((dupl^z) $ unzip(z)) *
-                             Trace(z, Symmetry(z-1,1) $ ((fifo $ dupl) * ((fifo $ dupl)^(z-1))) $ unzip(z) ) ) $
-                           ((id^z) * (zip(z) $ (Prim("drain",2,0)^z))))
+    val sequencer = lam(z, (((dupl^z) & unzip(z)) *
+                             Tr(z, Sym(z-1,1) & ((fifo & dupl) * ((fifo & dupl)^(z-1))) & unzip(z) ) ) &
+                           ((id^z) * (zip(z) & (Prim("drain",2,0)^z))))
     testCheck(seqfifo,
       "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((1 + (x - 1)) == (1 * x))",
       "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((1 + (x - 1)) == x)")
@@ -128,8 +135,8 @@ class TestCheck {
 
     testTypeError(lam(x,lam(x,"fifo"^(x+y))))   // var x is not fresh
     testTypeError(lam(x,lam(y,"fifo"^(x+z))))   // var z not found
-    testTypeError(Trace(2,("fifo"^3) $ (id * (id^3)))) // unification fails (clearly false after eval)
-    testTypeError(lam(x,id^x) $ lam(x,"fifo"^x))   // arguments not disjoint
+    testTypeError(Tr(2,("fifo"^3) & (id * (id^3)))) // unification fails (clearly false after eval)
+    testTypeError(lam(x,id^x) & lam(x,"fifo"^x))   // arguments not disjoint
     testTypeError(zip)   // constraints with a sum until "x" - no variables are supported here.
     testTypeError(unzip) // constraints with a sum until "x" - no variables are supported here.
 
@@ -137,7 +144,7 @@ class TestCheck {
 
 
 //  @Test def TestUnification(): Unit = {
-//    val c = Trace(2,("fifo"^3) $ (id * (id^3)))
+//    val c = Tr(2,("fifo"^3) $ (id * (id^3)))
 //    val typ = TypeCheck.check(c)
 //    val (subst,rest) = Unify.getUnification(typ.const)
 //    println(show(c)+" : "+typ)

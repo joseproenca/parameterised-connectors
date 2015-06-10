@@ -66,7 +66,9 @@ object Eval {
     }
     case ITE(b, ifTrue, ifFalse) => apply(b) match {
       case BVal(bv) => if (bv) apply(ifTrue) else apply(ifFalse)
-      case other => ITE(other,apply(ifTrue),apply(ifFalse))
+      case other =>
+        if (ifTrue == ifFalse) apply(ifTrue)
+        else ITE(other,apply(ifTrue),apply(ifFalse))
     }
   }
 

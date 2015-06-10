@@ -44,7 +44,7 @@ object Show {
       s"if ${showP(b)} then ${showP(ifTrue)} else ${showP(ifFalse)}"
   }
   private def showP(exp:IExpr):String = exp match {
-    case Add(_,_) | Sub(_,_) | Mul(_,_) => s"(${apply(exp)})"
+    case Add(_,_) | Sub(_,_) | Mul(_,_) | ITE(_,_,_) => s"(${apply(exp)})"
     case _ => apply(exp)
   }
 
