@@ -18,8 +18,6 @@ import paramConnectors.DSL._
 
 typeOf( lam("x":I,"some-channel"^"x") )
 // ∀x:I . x -> x
-
-typeUnify( 
 ```
 
 The examples below show more complex examples. As exemplified, besides ```typeOf``` one can produce intermediate results, using ```typeTree``` to build the initial derivation tree and ```typeUnify``` to perform unification (and small simplification) to the constraints in the derivation tree.
