@@ -21,8 +21,9 @@ class TestCheck {
     // 4 - evaluate (simplify) resulting type (eval also in some parts of the typecheck).
     val typev = Eval(typ)
     // 5 - solve rest of the constraints
-    val newsubst = Solver.solve(typev.const)
-    if (!newsubst.isDefined) throw new TypeCheckException("Solver failed")
+//    val newsubst = Solver.solve(typev.const)
+    val newsubst = Solver.solve(typev)
+    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
     // 6 - apply the new substitution to the previous type and eval
     val typev2 = Eval(newsubst.get(typev))
     // print and check
@@ -64,7 +65,7 @@ class TestCheck {
     testCheck( id * (id^2),
               "1 * (1^2) -> 1 * (1^2)",
               "3 -> 3")
-    testCheck( (id^x) ^ (x,Add(1,2)),
+    testCheck( (id^x) ^ x<Add(1,2),
               "6 -> 6 | (6 == Σ{x=1 to (1 + 2)}(x)) & (6 == Σ{x=1 to (1 + 2)}(x))",
               "6 -> 6")
     testCheck(id^3,
@@ -76,12 +77,16 @@ class TestCheck {
     testCheck(Tr(2,id*id*id),
               "x1 -> x2 | ((x1 + 2) == ((1 + 1) + 1)) & ((x2 + 2) == ((1 + 1) + 1))",
               "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)")
+//              "x1 -> x2 | ((x1 + 2) == ((1 + 1) + 1)) & ((x2 + 2) == ((1 + 1) + 1)) & ((x1 + 2) > -1) & ((x2 + 2) > -1)",
+//              "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3) & ((x1 + 2) > -1) & ((x2 + 2) > -1)")
     testCheck(lam("x":I,dupl^x),
               "∀x:I . 1^x -> 2^x",
               "∀x:I . x -> 2 * x")
     testCheck(Tr(2,("fifo"^3) & (id * (id^2))),
               "x1 -> x2 | ((x1 + 2) == (1 * 3)) & ((x2 + 2) == (1 + (1 * 2))) & ((1 * 3) == (1 + (1 * 2)))",
               "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)")
+//              "x1 -> x2 | ((x1 + 2) == (1 * 3)) & ((x2 + 2) == (1 + (1 * 2))) & ((x1 + 2) > -1) & ((x2 + 2) > -1) & ((1 * 3) == (1 + (1 * 2)))",
+//              "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3) & ((x1 + 2) > -1) & ((x2 + 2) > -1)")
     testCheck(("fifo"^3) & (id * (id^2)),
               "1^3 -> 1 * (1^2) | (1 * 3) == (1 + (1 * 2))",
               "3 -> 3")
@@ -103,6 +108,9 @@ class TestCheck {
     testCheck(lam(y, (id^x)^x<y) (3),
       "6 -> 6 | (6 == Σ{x=1 to 3}(x)) & (6 == Σ{x=1 to 3}(x))",
       "6 -> 6")
+    testCheck ( lam(x,Tr(x,id^3)) ,
+      "∀x:I . x1 -> x2 | ((x1 + x) == (1 * 3)) & ((x2 + x) == (1 * 3))",
+      "∀x:I . x1 -> x2 | ((x1 + x) == 3) & ((x2 + x) == 3)" )
     // conditionals
     testCheck( lam("a":B, Choice("a",id,dupl)) ,
       "∀a:B . 1 +a+ 1 -> 1 +a+ 2",
@@ -124,12 +132,21 @@ class TestCheck {
     testCheck(seqfifo,
       "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((1 + (x - 1)) == (1 * x))",
       "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((1 + (x - 1)) == x)")
+//      "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((x1 + (x - 1)) > -1) & ((x2 + (x - 1)) > -1) & ((1 + (x - 1)) == (1 * x))",
+//      "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((x1 + (x - 1)) > -1) & ((x2 + (x - 1)) > -1) & ((1 + (x - 1)) == x)")
     testCheck( zip(3) ,
       "x3 -> x4 | ((x3 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == (x4 + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y))) & ((x4 + 12) == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y)))",
       "x3 -> x4 | ((x3 + 12) == 18) & ((x4 + 12) == 18)")
+//      "x3 -> x4 | ((x3 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == (x4 + 12)) & ((x3 + ((2 * 3) * (3 - 1))) > -1) & ((x4 + ((2 * 3) * (3 - 1))) > -1) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y))) & ((x4 + 12) == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y)))",
+//      "x3 -> x4 | ((x3 + 12) == 18) & ((x3 + 12) > -1) & ((x4 + 12) > -1) & ((x4 + 12) == 18)")
     testCheck ( unzip(4) ,
       "x3 -> x4 | ((x3 + ((2 * 4) * (4 - 1))) == (((2 * 4) * (4 - 1)) + (2 * 4))) & ((x4 + ((2 * 4) * (4 - 1))) == (x4 + 24)) & (((2 * 4) + ((2 * 4) * (4 - 1))) == 32) & (32 == Σ{y=1 to 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1))) & ((x4 + 24) == Σ{y=1 to 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1)))",
       "x3 -> x4 | ((x3 + 24) == 32) & ((x4 + 24) == 32)")
+//      "x3 -> x4 | ((x3 + ((2 * 4) * (4 - 1))) == (((2 * 4) * (4 - 1)) + (2 * 4))) & ((x4 + ((2 * 4) * (4 - 1))) == (x4 + 24)) & ((x3 + ((2 * 4) * (4 - 1))) > -1) & ((x4 + ((2 * 4) * (4 - 1))) > -1) & (((2 * 4) + ((2 * 4) * (4 - 1))) == 32) & (32 == Σ{y=1 to 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1))) & ((x4 + 24) == Σ{y=1 to 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1)))",
+//      "x3 -> x4 | ((x3 + 24) == 32) & ((x3 + 24) > -1) & ((x4 + 24) > -1) & ((x4 + 24) == 32)")
+    testCheck(sequencer(3),
+      "(1^3) * x9 -> (1^3) * (0^3) | ((x4 + x10) == ((1 * 3) + x13)) & ((2 * 3) == 6) & ((6 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == (x4 + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{y=1 to 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & ((x4 + 12) == Σ{y=1 to 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & ((x9 + 3) == ((3 - 1) + 1)) & ((x10 + 3) == (x10 + 3)) & ((2 + (2 * (3 - 1))) == 6) & ((1 + (3 - 1)) == (1 + (1 * (3 - 1)))) & (1 == 1) & (1 == 1) & ((6 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & (((x10 + 3) + ((2 * 3) * (3 - 1))) == ((x10 + 3) + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{y=1 to 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & (((x10 + 3) + 12) == Σ{y=1 to 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & (6 == (2 * 3)) & ((x13 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((6 + ((2 * 3) * (3 - 1))) == (6 + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y))) & ((6 + 12) == Σ{y=1 to 3}(((3 - y) + (2 * y)) + (3 - y)))",
+      "3 + x9 -> 3 | ((x4 + x10) == (3 + x13)) & ((x4 + 12) == 18) & ((x9 + 3) == 3) & (((x10 + 3) + 12) == 18) & ((x13 + 12) == 18)")
 
 
 
@@ -137,8 +154,9 @@ class TestCheck {
     testTypeError(lam(x,lam(y,"fifo"^(x+z))))   // var z not found
     testTypeError(Tr(2,("fifo"^3) & (id * (id^3)))) // unification fails (clearly false after eval)
     testTypeError(lam(x,id^x) & lam(x,"fifo"^x))   // arguments not disjoint
-    testTypeError(zip)   // constraints with a sum until "x" - no variables are supported here.
-    testTypeError(unzip) // constraints with a sum until "x" - no variables are supported here.
+    testTypeError(zip)       // constraints with a sum until "x" - no variables are supported here.
+    testTypeError(unzip)     // constraints with a sum until "x" - no variables are supported here.
+    testTypeError(sequencer) // constraints with a sum until "z" - no variables are supported here.
 
   }
 

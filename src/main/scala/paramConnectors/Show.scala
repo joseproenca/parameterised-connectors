@@ -39,7 +39,7 @@ object Show {
     case Add(e1,e2) => s"${showP(e1)} + ${showP(e2)}"
     case Sub(e1,e2) => s"${showP(e1)} - ${showP(e2)}"
     case Mul(e1,e2) => s"${showP(e1)} * ${showP(e2)}"
-    case Sum(x,from,to,e) => s"Σ{${x.x}=${apply(from)} to ${showP(to)}}(${apply(e)})"
+    case Sum(x,from,to,e) => s"Σ{${x.x}=${apply(from)} to ${showP(to)}}${showP(e)}"
     case ITE(b,ifTrue,ifFalse) =>
       s"if ${showP(b)} then ${showP(ifTrue)} else ${showP(ifFalse)}"
   }
@@ -53,9 +53,10 @@ object Show {
     case BVal(b)     => b.toString
     case BVar(x)     => x
     case EQ(e1, e2)  => s"${showP(e1)} == ${showP(e2)}"
+    case GT(e1, e2)  => s"${showP(e1)} > ${showP(e2)}"
     case And(Nil)    => ""
     case And(e::Nil) => apply(e)
-    case And(es)     => es.map(showP(_)).mkString(" & ")
+    case And(es)     => es.map(showP).mkString(" & ")
     case Or(e1, e2)  => s"${showP(e1)} | ${showP(e2)}"
     case Not(e1)     => s"!${showP(e1)}"
   }
@@ -64,6 +65,10 @@ object Show {
     case _ => s"(${apply(exp)})"
   }
 
+  def showVar(v:Var) = v match {
+    case IVar(x) => x+":I"
+    case BVar(x) => x+":B"
+  }
 
   def apply(typ:Type): String =
     (if (typ.isGeneral) "" else "© ") +

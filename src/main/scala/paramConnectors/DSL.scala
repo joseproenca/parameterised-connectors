@@ -47,8 +47,9 @@ object DSL {
     // 4 - evaluate (simplify) resulting type (eval also in some parts of the typecheck).
     val typev = Eval(typ)
     // 4 - solve rest of the constraints
-    val newsubst = Solver.solve(typev.const)
-    if (!newsubst.isDefined) throw new TypeCheckException("Solver failed")
+    //val newsubst = Solver.solve(typev.const)
+    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
     // 5 - apply the new substitution to the previous type and eval
     Eval(newsubst.get(typev))
   }

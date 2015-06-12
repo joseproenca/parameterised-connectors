@@ -1,6 +1,6 @@
 package paramConnectors
 
-trait Var
+sealed trait Var
 
 sealed abstract class Expr
 
@@ -22,7 +22,6 @@ case class Sub(e1:IExpr,e2:IExpr) extends IExpr
 case class Mul(e1:IExpr,e2:IExpr) extends IExpr
 case class Sum(x:IVar,from:IExpr,to:IExpr,e:IExpr) extends IExpr
 case class ITE(b:BExpr,ifTrue:IExpr,ifFalse:IExpr) extends IExpr
-// to be completed
 
 
 /**
@@ -47,8 +46,9 @@ class IfWrap(ifc:BExpr,thenc:IExpr) {
 
 case class BVal(b:Boolean) extends BExpr
 case class BVar(x:String) extends BExpr with Var
-//case class IEQ(e1:Interface,e2:Interface) extends BExpr
-case class EQ(e1:IExpr,e2:IExpr) extends BExpr
 case class And(es:List[BExpr]) extends BExpr // special treatment for ands, because constraints in typechecking are a big conjunction
 case class Or(e1:BExpr,e2:BExpr) extends BExpr
 case class Not(e:BExpr) extends BExpr
+case class EQ(e1:IExpr,e2:IExpr) extends BExpr
+case class GT(e1:IExpr,e2:IExpr) extends BExpr
+// TODO: add GT - useful for imposing certain interfaces to be positive

@@ -26,7 +26,7 @@ object Unify {
       val (news,newrest) = getUnification(s(And(exps)),rest)
       (news + (x,BVal(b=true)), newrest)
     case And(EQ(e1, e2)::exps) if e1 == e2 => getUnification(And(exps),rest)
-    case And(EQ(x@IVar(_), e2)::exps) if free(x,e2) =>
+    case And(EQ(x@IVar(_), e2)::exps) if isFree(x,e2) =>
       val s = Substitution(x , e2)
       val (news,newrest) = getUnification( s(And(exps)),rest)
       (news + (x,e2), newrest)
@@ -36,6 +36,7 @@ object Unify {
     // "equality"/"or" of general int expresions - postpone
     case And((eq@EQ(_,_))::exps) => getUnification(And(exps),rest & eq)
     case And((or@Or(_,_))::exps) => getUnification(And(exps),rest & or)
+    case And((gt@GT(_,_))::exps) => getUnification(And(exps),rest & gt)
     //
     case And(Nil) => (Substitution(),rest)
     case other => getUnification(And(other::Nil),rest)
@@ -43,27 +44,28 @@ object Unify {
 
 
 
-  def free(x:IVar,e:IExpr): Boolean = e match {
+  def isFree(x:IVar,e:IExpr): Boolean = e match {
     case `x` => false
     case IVal(_) => true
     case IVar(_) => true
-    case Add(e1, e2) => free(x,e1) && free(x,e2)
-    case Sub(e1, e2) => free(x,e1) && free(x,e2)
-    case Mul(e1, e2) => free(x,e1) && free(x,e2)
-    case Sum(`x`, from, to, _) => free(x,from) && free(x,to)
-    case Sum(_, from, to, e2) => free(x,from) && free(x,to) && free(x,e2)
-    case ITE(b, ifTrue, ifFalse) => free(x,b) && free(x,ifTrue) && free(x,ifFalse)
+    case Add(e1, e2) => isFree(x,e1) && isFree(x,e2)
+    case Sub(e1, e2) => isFree(x,e1) && isFree(x,e2)
+    case Mul(e1, e2) => isFree(x,e1) && isFree(x,e2)
+    case Sum(`x`, from, to, _) => isFree(x,from) && isFree(x,to)
+    case Sum(_, from, to, e2) => isFree(x,from) && isFree(x,to) && isFree(x,e2)
+    case ITE(b, ifTrue, ifFalse) => isFree(x,b) && isFree(x,ifTrue) && isFree(x,ifFalse)
   }
 
-  def free(x:IVar,e:BExpr): Boolean = e match {
+  def isFree(x:IVar,e:BExpr): Boolean = e match {
     case BVal(_) => true
     case BVar(_) => true
 //    case IEQ(e1, e2) => free(x,e1) && free(x,e2)
-    case EQ(e1, e2) => free(x,e1) && free(x,e2)
+    case EQ(e1, e2) => isFree(x,e1) && isFree(x,e2)
+    case GT(e1, e2) => isFree(x,e1) && isFree(x,e2)
     case And(Nil) => true
-    case And(e2::es) => free(x,e2) && free(x,And(es))
-    case Or(e1, e2) => free(x,e1) && free(x,e2)
-    case Not(e1) => free(x,e1)
+    case And(e2::es) => isFree(x,e2) && isFree(x,And(es))
+    case Or(e1, e2) => isFree(x,e1) && isFree(x,e2)
+    case Not(e1) => isFree(x,e1)
   }
 
 //  def free(x:IVar,itf:Interface): Boolean = itf match {

@@ -78,19 +78,25 @@ object TypeCheck {
       Type(Arguments(), i, i, BVal(b=true))
     case Symmetry(i, j) =>
       Type(Arguments(), i*j, j*i, BVal(b=true))
+    // TODO:? Trace imposes x+i>0 and y+i>0
     case Trace(i, c) =>
       val Type(args,i1,j1,phi,isG) = check(gamma,c)
       val x = Port(IVar(fresh())) // gen unique name
       val y = Port(IVar(fresh())) // gen unique name
       Type(args, x, y, EQ(interfaceSem(x * i), interfaceSem(i1)) &
-                       EQ(interfaceSem(y * i), interfaceSem(j1)) & phi, isG)
+                       EQ(interfaceSem(y * i), interfaceSem(j1)) &
+//                       GT(interfaceSem(x * i), IVal(-1)) &
+//                       GT(interfaceSem(y * i), IVal(-1)) &
+                       phi, isG)
     case Prim(name,i,j) =>
       Type(Arguments(), i, j, BVal(b=true), isGeneral=true)
+    // TODO:? c^a imposes a>=0
     case Exp(a, c) =>
       check(gamma,a)
       val Type(args,i,j,phi,isG) = check(gamma,c)
       Type(args, Repl(i,a), Repl(j,a), phi,isG)
     // TRICKY CASE - add complex constraint!
+    // TODO:? c^(x<a) imposes a>=0
     case ExpX(x, a, c) =>
       check(gamma,a)
       val Type(args,i,j,phi,isG) = check(gamma.addInt(x),c)
@@ -147,6 +153,7 @@ object TypeCheck {
     case v@BVar(x)   => if (!gamma(v)) throw new TypeCheckException(s"$v:Bool not in the context ($gamma)")
 //    case IEQ(e1, e2) => check(gamma,e1); check(gamma,e2)
     case EQ(e1, e2)  => check(gamma,e1); check(gamma,e2)
+    case GT(e1, e2)  => check(gamma,e1); check(gamma,e2)
     case And(Nil)    =>
     case And(e::es)  => check(gamma,e); check(gamma,And(es))
     case Or(e1, e2)  => check(gamma,e1); check(gamma,e2)

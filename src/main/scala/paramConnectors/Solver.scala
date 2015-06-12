@@ -1,5 +1,6 @@
 package paramConnectors
 
+import org.chocosolver.solver.search.loop.monitors.SearchMonitorFactory
 import org.chocosolver.solver.{Solver => CSolver}
 import org.chocosolver.solver.constraints.Constraint
 import org.chocosolver.solver.search.strategy.IntStrategyFactory
@@ -20,37 +21,32 @@ object Solver extends App {
   private var intVars: scala.collection.mutable.Map[String,IntVar] = null
   private var solver: CSolver = null
 
-  def solve(bExpr: BExpr): Option[Substitution] = {
+  private def MAX_INT:Int =  1000//VariableFactory.MAX_INT_BOUND
+  private def MIN_INT:Int = 0//VariableFactory.MIN_INT_BOUND
+  private def TIME_LIMIT = 5000 // 5 seconds
 
+
+  /**
+   * Solve a boolean constraint with integers using the Choco library.
+   * @param bExpr boolean constraint to be solved
+   * @return a substitution if a solution is found, or None otherwise.
+   *         The substitution is marked as "concrete" if more than 1 solution exist.
+   */
+  def solve(bExpr: BExpr): Option[Substitution] = {
+    // optimisation
     if (bExpr == BVal(true))
       return Some(Substitution())
 
-    seed = 0
-//    boolVars.clear()
-//    intVars.clear()
-    boolVars = scala.collection.mutable.Map[String,BoolVar]()
-    intVars  = scala.collection.mutable.Map[String,IntVar]()
-    solver = new CSolver()
-
-    val c = bexpr2choco(bExpr)
-    solver.post(c)
-
-    // set strategy and finds solution
-    if (intVars.isEmpty)
-      solver.set(IntStrategyFactory.lexico_LB())
-    else
-      solver.set(IntStrategyFactory.domOverWDeg(intVars.values.toArray,0))
-    val solved = solver.findSolution()
-
+    val sol = solveAux(bExpr)
     // build reply (substitution) and return value
-    if (solved) {
+    if (sol.isDefined) {
       var res = Substitution()
       for ((x, v) <- intVars)
         res +=(IVar(x), IVal(v.getValue))
       for ((x, v) <- boolVars)
         res +=(BVar(x), BVal(v.getValue == 1))
       // a substitution is concrete if the constraints have more than 1 solution (more common)
-      if (solver.nextSolution())
+      if (sol.get.nextSolution())
         res.setConcrete()
       Some(res)
       //      for (v <- boolVars.values ++ intVars.values)
@@ -64,19 +60,121 @@ object Solver extends App {
     }
   }
 
+  //TO-TEST: new "solve" method that checks if a given set of variables can take more than 1 value;
+  // (by including constraints "x != subs(x)" for every relevant variable "x" and previous solution "subs".)
+  // (can even go var by var, and write "forall x" or "exist x" if "x" has more solutions.)
+  /**
+   * EXPERIMENTAL: Same as "solve(bExpr: BExpr)", but marks the result as "concrete" only if the relevant vars are not unique.
+   * The relevant vars are given by the free variables (not quantified) in the interface of the type.
+   * Possible problem: second search for more solutions can be expensive!
+   * @param typ type used to extract constraints and relevant vars
+   * @return substitution if a solution is found, or None otherwise, marked as "concrete" if applicable.
+   */
+  def solve(typ:Type)
+      : Option[Substitution] = {
+    // optimisation
+    if (typ.const == BVal(true))
+      return Some(Substitution())
+
+    val sol = solveAux(typ.const)
+    if (sol.isDefined) {
+      var res = Substitution()
+      for ((x, v) <- intVars)
+        res +=(IVar(x), IVal(v.getValue))
+      for ((x, v) <- boolVars)
+        res +=(BVar(x), BVal(v.getValue == 1))
+
+      // set concrete if negating the relevant vars yields more solutions
+      var newExp = typ.const
+      val vars:Iterable[Var] = freeVars(Eval.interfaceSem(Tensor(typ.i,typ.j))) -- typ.args.vars
+//      println(s"#### got relevant vars: ${vars.map(Show.showVar)}")
+      for (v <- vars) v match {
+        case IVar(x) =>
+          if (intVars contains x)
+            newExp = newExp & Not(EQ(IVar(x),IVal(intVars(x).getValue)))
+        case BVar(x) =>
+          if (boolVars contains x) {
+            if (boolVars(x).getValue == 1)
+              newExp = newExp & BVar(x)
+            else
+              newExp = newExp & Not(BVar(x))
+          }
+      }
+      if (vars.nonEmpty) {
+//        println(s"#### got new expression: ${Show(newExp)}")
+        val sndSol = solveAux(newExp)
+        if (sndSol.isDefined)
+          res.setConcrete()
+      }
+      // return the result
+      Some(res)
+    }
+    else
+      None
+  }
+
+  private def freeVars(e:IExpr):Set[Var] = e match {
+    case IVal(n) => Set()
+    case x@IVar(_) => Set(x)
+    case Add(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case Sub(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case Mul(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case Sum(x, from, to, e1) => (freeVars(e1)-x) ++ freeVars(from) ++ freeVars(to)
+    case ITE(b, ifTrue, ifFalse) => freeVars(b) ++ freeVars(ifTrue) ++ freeVars(ifFalse)
+  }
+  private def freeVars(e:BExpr): Set[Var] = e match {
+    case BVal(b) => Set()
+    case x@BVar(_) => Set(x)
+    case EQ(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case GT(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case And(Nil) => Set()
+    case And(e1::es) => freeVars(e1) ++ freeVars(And(es))
+    case Or(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case Not(e1) => freeVars(e1)
+  }
+
+  private def solveAux(bExpr: BExpr): Option[CSolver] = {
+
+    seed = 0
+//    boolVars.clear()
+//    intVars.clear()
+    boolVars = scala.collection.mutable.Map[String,BoolVar]()
+    intVars  = scala.collection.mutable.Map[String,IntVar]()
+    solver = new CSolver()
+    SearchMonitorFactory.limitTime(solver,TIME_LIMIT)
+
+    val c = bexpr2choco(bExpr)
+    solver.post(c)
+
+    // set strategy and finds solution
+//    if (intVars.isEmpty)
+//      solver.set(IntStrategyFactory.lexico_LB())
+//    else
+//      solver.set(IntStrategyFactory.domOverWDeg(intVars.values.toArray,0))
+    val vars = solver.retrieveIntVars()
+        if (intVars.isEmpty)
+          solver.set(IntStrategyFactory.lexico_LB())
+        else
+        solver.set(IntStrategyFactory.domOverWDeg(vars,0))
+    val solved = solver.findSolution()
+
+    if (solved) Some(solver)
+    else None
+  }
+
   private def genFreshIVar(): IntVar = {
     seed += 1
     // "__"+(seed-1)
     // note: not added to list of cached variables.
     // note2:
-    VariableFactory.bounded("__"+(seed-1),-1000,1000,solver)
+    VariableFactory.bounded("__"+(seed-1),MIN_INT,MAX_INT,solver)
   }
 
 
   private def getIVar(v:String): IntVar = {
     if (intVars contains v) intVars(v)
     else {
-      val res = VariableFactory.bounded(v,-1000,1000,solver)
+      val res = VariableFactory.bounded(v,MIN_INT,MAX_INT,solver)
       intVars(v) = res
       res
     }
@@ -170,6 +268,10 @@ object Solver extends App {
     case EQ(IVar(x), IVal(i)) => arithm(getIVar(x),"=",i)
     case EQ(IVal(i), exp) => arithm(getIVar(exp),"=",i)
     case EQ(exp1, exp2) => arithm(getIVar(exp1),"=",getIVar(exp2))
+    case GT(IVal(i1), IVal(i2)) => if (i1>i2) TRUE(solver) else FALSE(solver)
+    case GT(IVar(x), IVal(i)) => arithm(getIVar(x),">",i)
+    case GT(IVal(i), exp) => arithm(getIVar(exp),"<",i)
+    case GT(exp1, exp2) => arithm(getIVar(exp1),">",getIVar(exp2))
   }
 
 

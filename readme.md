@@ -12,6 +12,7 @@ The type checking uses a mix of constraint unification and constraint solving.
 This project is a follow up and a simpler approach to the ideas experimented in https://github.com/joseproenca/connector-family, using a different construct to produce loops (traces instead of duals) and not considering connectors as parameters.
 
 The following example shows how to quickly build and type-check a connector.
+To try the blocks of code below, the easiest way is to use ```sbt``` by using the command ```sbt console``` and copy-paste this code into the console.
 
 ```scala
 import paramConnectors.DSL._
@@ -38,7 +39,7 @@ typeTree( lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 // ∀x:I,n:I . x + x -> n | (x + x) == n
 
 typeOf(    lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
-// © 1 -> 1
+// 1 -> 1
 typeUnify( lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
 // ∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1))
 //                 & ((x2 + (x - 1)) == x)
@@ -51,6 +52,12 @@ typeOf(   lam(n, (id^x)^x<n)(3) )
 // 6 -> 6
 typeTree( lam(n, (id^x)^x<n)(3) )
 // x1 -> x2 | (x1 == 6) & (x2 == 6)
+
+typeOf( lam(x,Tr(x,id^3)) )
+// © 0 -> 0
+typeUnify( lam(x,Tr(x,id^3)) )
+// ∀x:I . x1 -> x2 | ((x1 + x) == 3) & ((x2 + x) == 3)
 ```
 
-Observe that the type of ```lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x)))``` is  ```© 1 -> 1```. The initial symbol means that this is a concrete solution, i.e., when trying to solve the constraints multiple solutions were found, and one particular was used. Whenever the ```©``` symbol does not appear in the type we are guaranteed to have the most general type.
+Observe that the type of ```lam(x,Tr(x,id^3))``` is  ```© 1 -> 1```. The initial symbol means that this is a concrete solution, i.e., when trying to solve the constraints multiple solutions were found for the free variables of the type, and one particular was chosen. Whenever the ```©``` symbol does not appear in the type we are guaranteed to have the most general type.
+The price to pay for knowing wether a type is concrete or not is a second run of the constraint solving, this time negating the previous assignment for the free variables.

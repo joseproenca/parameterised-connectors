@@ -79,6 +79,7 @@ class Substitution(items:List[Item]) {
     case BVal(_)     => exp
     //      case IEQ(e1, e2) => IEQ(subst(i,e1),subst(i,e2))
     case EQ(e1, e2)  => EQ(subst(i,e1),subst(i,e2))
+    case GT(e1, e2)  => GT(subst(i,e1),subst(i,e2))
     case And(es)     => And(es.map(subst(i,_)))
     case Or(e1, e2)  => Or(subst(i,e1),subst(i,e2))
     case Not(e1)     => Not(subst(i,e1))
