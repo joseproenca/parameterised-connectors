@@ -58,7 +58,7 @@ object Eval {
         val ev = apply(newe)
 //        println(" ## eval of "+PrettyPrint.show(e))
 //        println(s" ## sum from $a to $b")
-        for(y <- a to b)
+        for(y <- a until b)
           res += Substitution(x , IVal(y))(ev)
 //        println(" ## got new res (before simpl): "+PrettyPrint.show(res))
         apply(res) // e(a) + ... + e(b)

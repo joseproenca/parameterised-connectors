@@ -100,8 +100,8 @@ object TypeCheck {
     case ExpX(x, a, c) =>
       check(gamma,a)
       val Type(args,i,j,phi,isG) = check(gamma.addInt(x),c)
-      val ci = Sum(x,IVal(1),a,interfaceSem(Eval(i)))
-      val cj = Sum(x,IVal(1),a,interfaceSem(Eval(j)))
+      val ci = Sum(x,IVal(0),a,interfaceSem(Eval(i))) // 0<=x<a
+      val cj = Sum(x,IVal(0),a,interfaceSem(Eval(j)))
       val newi = IVar(fresh()) // gen unique name
       val newj = IVar(fresh()) // gen unique name
       Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & phi,isG)

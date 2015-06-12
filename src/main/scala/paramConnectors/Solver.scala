@@ -162,12 +162,11 @@ object Solver extends App {
     else None
   }
 
-  private def genFreshIVar(): IntVar = {
+  private def genFreshIVar(): IntVar = genFreshIVar(MIN_INT,MAX_INT)
+  private def genFreshIVar(from:Int,to:Int): IntVar = {
     seed += 1
-    // "__"+(seed-1)
     // note: not added to list of cached variables.
-    // note2:
-    VariableFactory.bounded("__"+(seed-1),MIN_INT,MAX_INT,solver)
+    VariableFactory.bounded("__"+(seed-1),from,to,solver)
   }
 
 
@@ -186,14 +185,14 @@ object Solver extends App {
     case Sub(e1, e2) => combineIExpr(e1,e2,"-")
     case Mul(e1, e2) => combineIExpr(e1,e2,"*")
     case Sum(x, IVal(from), IVal(to), e) =>
-      if (from <= to){
+      if (from < to){ // "from" did not reach "to" yet
         val e1 = Substitution(x,IVal(from)).apply(e)
         getIVar(Add(e1,Sum(x,IVal(from+1),IVal(to),e)))
       }
       else {
-        val v = genFreshIVar()
-        val c = arithm(v,"=",0)
-        solver.post(c)
+        val v = genFreshIVar(0,0)
+//        val c = arithm(v,"=",0)
+//        solver.post(c)
         v
       }
     case ITE(b, ifTrue, ifFalse) => // if b then v=intval1 else v=intval2; v
