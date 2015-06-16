@@ -19,8 +19,9 @@ object DSL {
   def lam(x:I,c:Connector) = IAbs(x,c)
   def lam(x:B,c:Connector) = BAbs(x,c)
 
-  val Sym = Symmetry
-  val Tr = Trace
+  val Sym  = Symmetry
+  val Tr   = Trace
+  val Prim = paramConnectors.Prim
 
   val swap = Symmetry(1,1)
   val id = Id(1)
