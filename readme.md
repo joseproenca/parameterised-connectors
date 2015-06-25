@@ -69,6 +69,8 @@ typeInstance( lam(x,Tr(x,id^3)) )
 // returns © 0 -> 0
 ```
 
+Even more examples can be found in our [test suite](https://github.com/joseproenca/parameterised-connectors/blob/master/src/test/scala/paramConnectors/TestCheck.scala).
+
 Observe that an instance of the type of ```lam(x,Tr(x,id^3))``` is  ```© 0 -> 0```. The initial symbol means that this is a concrete solution, i.e., when trying to solve the constraints multiple solutions were found for the variables of the type, and one particular was chosen. Whenever the ```©``` symbol does not appear when requesting an instance of a type we are guaranteed to have the most general type.
 
 The practical price to pay for knowing wether a type is concrete or not is a second run of the constraint solving, this time negating the previous assignment for the variables in the type.
