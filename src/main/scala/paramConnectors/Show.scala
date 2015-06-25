@@ -15,10 +15,11 @@ object Show {
     case BAbs(x, c)     => s"\\${apply(x)}.${showP(c)}"
     case IApp(c, a)     => s"${showP(c)}(${apply(a)})"
     case BApp(c, b)     => s"${showP(c)}(${apply(b)})"
+    case Restr(c,b)     => s"${showP(c)} | ${showP(b)}"
   }
   private def showP(con:Connector): String = con match {
     case Seq(_,_) | Par(_,_) | Choice(_,_,_) | IAbs(_,_) | BAbs(_,_) |
-         Exp(_,_) | ExpX(_,_,_) => s"(${apply(con)})"
+         Exp(_,_) | ExpX(_,_,_) | Restr(_,_) => s"(${apply(con)})"
     case _ => apply(con)
   }
 

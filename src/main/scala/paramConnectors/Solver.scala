@@ -66,6 +66,7 @@ object Solver extends App {
   /**
    * EXPERIMENTAL: Same as "solve(bExpr: BExpr)", but marks the result as "concrete" only if the relevant vars are not unique.
    * The relevant vars are given by the free variables (not quantified) in the interface of the type.
+   * CORRECTION: relevant vars are all vars in the interface.
    * Possible problem: second search for more solutions can be expensive!
    * @param typ type used to extract constraints and relevant vars
    * @return substitution if a solution is found, or None otherwise, marked as "concrete" if applicable.
@@ -73,11 +74,14 @@ object Solver extends App {
   def solve(typ:Type)
       : Option[Substitution] = {
     // optimisation
-    if (typ.const == BVal(true))
+    if (typ.const == BVal(true) || typ.const == And(List()))
       return Some(Substitution())
 
     val sol = solveAux(typ.const)
     if (sol.isDefined) {
+      if (sol.isEmpty)
+        return Some(Substitution())
+
       var res = Substitution()
       for ((x, v) <- intVars)
         res +=(IVar(x), IVal(v.getValue))
@@ -86,7 +90,7 @@ object Solver extends App {
 
       // set concrete if negating the relevant vars yields more solutions
       var newExp = typ.const
-      val vars:Iterable[Var] = freeVars(Eval.interfaceSem(Tensor(typ.i,typ.j))) -- typ.args.vars
+      val vars:Iterable[Var] = freeVars(Eval.interfaceSem(Tensor(typ.i,typ.j))) //-- typ.args.vars
 //      println(s"#### got relevant vars: ${vars.map(Show.showVar)}")
       for (v <- vars) v match {
         case IVar(x) =>

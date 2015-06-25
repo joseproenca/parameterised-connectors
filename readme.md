@@ -21,14 +21,24 @@ typeOf( lam("x":I,"some-channel"^"x") )
 // ∀x:I . x -> x
 ```
 
-The examples below show more complex examples. As exemplified, besides ```typeOf``` one can produce intermediate results, using ```typeTree``` to build the initial derivation tree and ```typeUnify``` to perform unification (and small simplification) to the constraints in the derivation tree.
+The examples below show more complex examples. 
+Our library provides 3 main functions to type check connectors:
+
+ * ```typeOf``` - returns the most general type after all steps (collect constraints, perform an unification algorithm, and perform constraint solver on remaining constraints.
+ 
+ * ```typeTree``` - applies the type rules and collects the constraints, without checking if they hold.
+
+ * ```typeInstance``` - performs the same steps as ```typeOf``` but provides an instance of the type, i.e., a type without constraints. This type can still be the most general type - it it is not a most general type, the type is annotated with ```©```  (standing for "concrete" type).
+
+The examples below show the usage of these functions with more complex examples. 
+
 
 ```scala
 val x:I = "x"
 val n:I = "n"
 val oneToTwo = Prim("oneToTwo",1,2) // 1 input, 2 outputs
 // other primitives in the DSL:
-//   id:1->1, lossy:1->1, fifo:1->1, merger:2->1,  
+//   id:1->1, lossy:1->1, fifo:1->1, merger:2->1,  dupl:1->2
 
 typeOf( lam(x,oneToTwo^x)(2) )
 // returns 2 -> 4
@@ -40,24 +50,25 @@ typeTree( lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 
 typeOf(    lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
 // returns 1 -> 1
-typeUnify( lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
+typeTree( lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
 // returns ∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1))
 //                         & ((x2 + (x - 1)) == x)
 //                         & ((1 + (x - 1)) == x)
 
-typeOf( lam(n, (id^x)^x<n) )
+typeOf( lam(n, id^x ^ x<--n) )
 // returns ∀n:I . Σ{0 ≤ x < n}x -> Σ{0 ≤ x < n}x
 
-typeOf(   lam(n, (id^x)^x<n)(3) )
+typeOf(   lam(n, id^x ^ x<--n)(3) )
 // returns 3 -> 3
-typeTree( lam(n, (id^x)^x<n)(3) )
+typeTree( lam(n, id^x ^ x<--n)(3) )
 // returns x1 -> x2 | (x1 == 3) & (x2 == 3)
 
 typeOf( lam(x,Tr(x,id^3)) )
-// returns © 0 -> 0
-typeUnify( lam(x,Tr(x,id^3)) )
 // returns ∀x:I . x1 -> x2 | ((x1 + x) == 3) & ((x2 + x) == 3)
+typeInstance( lam(x,Tr(x,id^3)) )
+// returns © 0 -> 0
 ```
 
-Observe that the type of ```lam(x,Tr(x,id^3))``` is  ```© 1 -> 1```. The initial symbol means that this is a concrete solution, i.e., when trying to solve the constraints multiple solutions were found for the free variables of the type, and one particular was chosen. Whenever the ```©``` symbol does not appear in the type we are guaranteed to have the most general type.
-The price to pay for knowing wether a type is concrete or not is a second run of the constraint solving, this time negating the previous assignment for the free variables.
+Observe that an instance of the type of ```lam(x,Tr(x,id^3))``` is  ```© 0 -> 0```. The initial symbol means that this is a concrete solution, i.e., when trying to solve the constraints multiple solutions were found for the variables of the type, and one particular was chosen. Whenever the ```©``` symbol does not appear when requesting an instance of a type we are guaranteed to have the most general type.
+
+The practical price to pay for knowing wether a type is concrete or not is a second run of the constraint solving, this time negating the previous assignment for the variables in the type.

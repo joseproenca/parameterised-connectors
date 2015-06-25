@@ -18,6 +18,7 @@ object DSL {
   type B = BVar
   def lam(x:I,c:Connector) = IAbs(x,c)
   def lam(x:B,c:Connector) = BAbs(x,c)
+  def not(b:BExpr) = Not(b)
 
   val Sym  = Symmetry
   val Tr   = Trace
@@ -36,24 +37,37 @@ object DSL {
   /**
    * Type check a connector (build tree, unify, and solve constraints)
    * @param c connector to be type-checked
-   * @return the type of the connector
+   * @return the (general) type of the connector - if constraint solving gives a concrete type, return the general type instead.
    */
   def typeOf(c:Connector): Type = {
-    // 1 - build derivation tree
-    val oldtyp = TypeCheck.check(c)
-    // 2 - unify constraints and get a substitution
-    val (subst,rest) = Unify.getUnification(oldtyp.const)
-    // 3 - apply substitution to the type
-    val typ = subst(oldtyp)
-    // 4 - evaluate (simplify) resulting type (eval also in some parts of the typecheck).
-    val typev = Eval(typ)
-    // 4 - solve rest of the constraints
+    // 1 - type check until the unification phase
+    val typev = typeUnify(c)
+    // 2 - solve rest of the constraints
     //val newsubst = Solver.solve(typev.const)
     val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
     if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    // 5 - apply the new substitution to the previous type and eval
+    // 3 - apply the new substitution to the previous type and eval
+    val concr = Eval(newsubst.get(typev))
+    if (concr.isGeneral) concr
+    else typev
+  }
+
+  /**
+   * Type check a connector (build tree, unify, and solve constraints)
+   * @param c connector to be type-checked
+   * @return the type of the connector - return a concrete type if one is found, otherwise the general one
+   */
+  def typeInstance(c:Connector): Type = {
+    // 1 - type check until the unification phase
+    val typev = typeUnify(c)
+    // 2 - solve rest of the constraints
+    //val newsubst = Solver.solve(typev.const)
+    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
+    // 3 - apply the new substitution to the previous type and eval
     Eval(newsubst.get(typev))
   }
+
 
   /**
    * Build the derivation tree of a connector (if it exists)

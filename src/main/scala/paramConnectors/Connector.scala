@@ -1,6 +1,7 @@
 package paramConnectors
 
 sealed abstract class Connector {
+  // helpers for the DSL
   def &(that:Connector) = Seq(this,that)
   def *(that:Connector) = Par(this,that)
   def ^(that:IExpr) = Exp(that,this)
@@ -8,6 +9,7 @@ sealed abstract class Connector {
   def ^(ew:ExpWrap) = ExpX(ew.x,ew.to,this)
   def apply(that:IExpr): Connector = IApp(this,that)
   def apply(that:BExpr): Connector = BApp(this,that)
+  def |(phi:BExpr): Connector = Restr(this,phi)
 
   // hides the details to the developer/user
   override def toString = Show(this)
@@ -29,3 +31,5 @@ case class IAbs(x:IVar, c:Connector) extends Connector
 case class BAbs(x:BVar, c:Connector) extends Connector
 case class IApp(c:Connector, a:IExpr) extends Connector
 case class BApp(c:Connector, b:BExpr) extends Connector
+
+case class Restr(c:Connector,phi:BExpr) extends Connector
