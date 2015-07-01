@@ -25,7 +25,7 @@ class TestTypeCheck {
       "3 -> 3",
       "3 -> 3")
     testOK( (id^x) ^ x<--Add(1,2),
-      "3 -> 3 | (3 == Σ{0 ≤ x < 1 + 2}x) & (3 == Σ{0 ≤ x < 1 + 2}x)",
+      "x1 -> x2 | (x1 == Σ{0 ≤ x < 1 + 2}x) & (x2 == Σ{0 ≤ x < 1 + 2}x)",
       "3 -> 3",
       "3 -> 3")
     testOK(id^3,
@@ -38,7 +38,9 @@ class TestTypeCheck {
       "3 -> 3")
     testOK(Tr(2,id*id*id),
       "x1 -> x2 | ((x1 + 2) == ((1 + 1) + 1)) & ((x2 + 2) == ((1 + 1) + 1))",
-      "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)",
+//      "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)",
+//      "1 -> 1 | ((1 + 2) == ((1 + 1) + 1)) & ((1 + 2) == ((1 + 1) + 1))",
+      "1 -> 1",
       "1 -> 1")
     testOK(lam("x":I,dupl^x),
       "∀x:I . 1^x -> 2^x",
@@ -46,7 +48,8 @@ class TestTypeCheck {
       "∀x:I . x -> 2 * x")
     testOK(Tr(2,("fifo"^3) & (id * (id^2))),
       "x1 -> x2 | ((x1 + 2) == (1 * 3)) & ((x2 + 2) == (1 + (1 * 2))) & ((1 * 3) == (1 + (1 * 2)))",
-      "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)",
+//      "x1 -> x2 | ((x1 + 2) == 3) & ((x2 + 2) == 3)",
+      "1 -> 1",
       "1 -> 1")
     testOK(("fifo"^3) & (id * (id^2)),
       "1^3 -> 1 * (1^2) | (1 * 3) == (1 + (1 * 2))",
@@ -57,29 +60,30 @@ class TestTypeCheck {
       "2 -> 2",
       "2 -> 2")
     testOK(lam(x,lam(y,("fifo"^x) & (id^y))),
-      "∀x:I,y:I . 1^y -> 1^y | (1 * y) == (1 * y)",
+      "∀x:I,y:I . 1^x -> 1^y | (1 * x) == (1 * y)",
       "∀x:I,y:I . y -> y",
       "∀x:I,y:I . y -> y")
     testOK(lam(x,lam(y,("fifo"^x) & (id^y))) (3),
-      "1^3 -> 1^3 | (1 * 3) == (1 * 3)",
+      "∀y:I . 1^3 -> 1^y | (1 * 3) == (1 * y)",
       "3 -> 3",
       "3 -> 3")
     testOK(lam(x, (id^x) * (id^x)) & lam(y,"fifo"^y),
-      "∀x:I,y:I . (1^x) * (1^x) -> 1^(x + x) | ((1 * x) + (1 * x)) == (1 * (x + x))",
-      "∀x:I,y:I . x + x -> x + x",
-      "∀x:I,y:I . x + x -> x + x")
+      "∀x:I,y:I . (1^x) * (1^x) -> 1^y | ((1 * x) + (1 * x)) == (1 * y)",
+      "∀x:I,y:I . 2 * x -> 2 * x",
+      "∀x:I,y:I . 2 * x -> 2 * x")
     testOK(lam(y, (id^x)^x<--y),
-      "∀y:I . Σ{0 ≤ x < y}x -> Σ{0 ≤ x < y}x | (Σ{0 ≤ x < y}x == Σ{0 ≤ x < y}x) & (Σ{0 ≤ x < y}x == Σ{0 ≤ x < y}x)",
-      "∀y:I . Σ{0 ≤ x < y}x -> Σ{0 ≤ x < y}x",
-      "∀y:I . Σ{0 ≤ x < y}x -> Σ{0 ≤ x < y}x")
+      "∀y:I . x1 -> x2 | (x1 == Σ{0 ≤ x < y}x) & (x2 == Σ{0 ≤ x < y}x)",
+      "∀y:I . x1 -> x2 | (y == ((y * y) + (-2 * x1))) & (y == ((y * y) + (-2 * x2)))",
+      "© 0 -> 0")
+//      "∀y:I . Σ{0 ≤ x < y}x -> Σ{0 ≤ x < y}x")
     testOK(lam(y, (id^x)^x<--y) (3),
-      "3 -> 3 | (3 == Σ{0 ≤ x < 3}x) & (3 == Σ{0 ≤ x < 3}x)",
+      "x1 -> x2 | (x1 == Σ{0 ≤ x < 3}x) & (x2 == Σ{0 ≤ x < 3}x)",
       "3 -> 3",
       "3 -> 3")
     testOK ( lam(x,Tr(x,id^3)) ,
       "∀x:I . x1 -> x2 | ((x1 + x) == (1 * 3)) & ((x2 + x) == (1 * 3))",
-      "∀x:I . x1 -> x2 | ((x1 + x) == 3) & ((x2 + x) == 3)" ,
-      "© 0 -> 0" )
+      "∀x:I . x1 -> x1" ,
+      "∀x:I . x1 -> x1" )
     // conditionals
     testOK( lam("a":B, Choice("a",id,dupl)) ,
       "∀a:B . 1 +a+ 1 -> 1 +a+ 2" ,
@@ -107,69 +111,85 @@ class TestTypeCheck {
                            ((id^z) * (zip(z) & (Prim("drain",2,0)^z))))
     testOK(seqfifo,
       "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & ((1 + (x - 1)) == (1 * x))",
-      "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == x) & ((1 + (x - 1)) == x)",
-      "1 -> 1")
+      "∀x:I . 1 -> 1",
+      "∀x:I . 1 -> 1")
     testOK( zip(3) ,
-      "x3 -> x4 | ((x3 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == (x4 + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{0 ≤ y < 3}(((3 - y) + (2 * y)) + (3 - y))) & ((x4 + 12) == Σ{0 ≤ y < 3}(((3 - y) + (2 * y)) + (3 - y)))",
-      "x3 -> x4 | ((x3 + 12) == 18) & ((x4 + 12) == 18)",
+      "x3 -> x4 | ((x3 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == x2) & (((2 * 3) + ((2 * 3) * (3 - 1))) == x1) & (x1 == Σ{0 ≤ y < 3}(((3 - y) + (2 * y)) + (3 - y))) & (x2 == Σ{0 ≤ y < 3}(((3 - y) + (2 * y)) + (3 - y)))",
+      "6 -> 6",
       "6 -> 6")
     testOK ( unzip(4) ,
-      "x3 -> x4 | ((x3 + ((2 * 4) * (4 - 1))) == (((2 * 4) * (4 - 1)) + (2 * 4))) & ((x4 + ((2 * 4) * (4 - 1))) == (x4 + 24)) & (((2 * 4) + ((2 * 4) * (4 - 1))) == 32) & (32 == Σ{0 ≤ y < 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1))) & ((x4 + 24) == Σ{0 ≤ y < 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1)))",
-      "x3 -> x4 | ((x3 + 24) == 32) & ((x4 + 24) == 32)",
+      "x3 -> x4 | ((x3 + ((2 * 4) * (4 - 1))) == (((2 * 4) * (4 - 1)) + (2 * 4))) & ((x4 + ((2 * 4) * (4 - 1))) == x2) & (((2 * 4) + ((2 * 4) * (4 - 1))) == x1) & (x1 == Σ{0 ≤ y < 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1))) & (x2 == Σ{0 ≤ y < 4}(((y + 1) + (2 * ((4 - y) - 1))) + (y + 1)))",
+      "8 -> 8",
       "8 -> 8")
     testOK(sequencer(3),
-      "(1^3) * x9 -> (1^3) * (0^3) | ((x4 + x10) == ((1 * 3) + x13)) & ((2 * 3) == 6) & ((6 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == (x4 + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{0 ≤ y < 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & ((x4 + 12) == Σ{0 ≤ y < 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & ((x9 + 3) == ((3 - 1) + 1)) & ((x10 + 3) == (x10 + 3)) & ((2 + (2 * (3 - 1))) == 6) & ((1 + (3 - 1)) == (1 + (1 * (3 - 1)))) & (1 == 1) & (1 == 1) & ((6 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & (((x10 + 3) + ((2 * 3) * (3 - 1))) == ((x10 + 3) + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{0 ≤ y < 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & (((x10 + 3) + 12) == Σ{0 ≤ y < 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & (6 == (2 * 3)) & ((x13 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((6 + ((2 * 3) * (3 - 1))) == (6 + 12)) & (((2 * 3) + ((2 * 3) * (3 - 1))) == 18) & (18 == Σ{0 ≤ y < 3}(((3 - y) + (2 * y)) + (3 - y))) & ((6 + 12) == Σ{0 ≤ y < 3}(((3 - y) + (2 * y)) + (3 - y)))",
-      "3 + x9 -> 3 | ((x4 + x10) == (3 + x13)) & ((x4 + 12) == 18) & ((x9 + 3) == 3) & (((x10 + 3) + 12) == 18) & ((x13 + 12) == 18)",
+      "(1^3) * x9 -> (1^3) * (0^3) | ((x4 + x10) == ((1 * 3) + x13)) & ((2 * 3) == x3) & ((x3 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x4 + ((2 * 3) * (3 - 1))) == x2) & (((2 * 3) + ((2 * 3) * (3 - 1))) == x1) & (x1 == Σ{0 ≤ y < 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & (x2 == Σ{0 ≤ y < 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & ((x9 + 3) == ((3 - 1) + 1)) & ((x10 + 3) == x8) & ((2 + (2 * (3 - 1))) == x7) & ((1 + (3 - 1)) == (1 + (1 * (3 - 1)))) & (1 == 1) & (1 == 1) & ((x7 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x8 + ((2 * 3) * (3 - 1))) == x6) & (((2 * 3) + ((2 * 3) * (3 - 1))) == x5) & (x5 == Σ{0 ≤ y < 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & (x6 == Σ{0 ≤ y < 3}(((y + 1) + (2 * ((3 - y) - 1))) + (y + 1))) & (x14 == (2 * 3)) & ((x13 + ((2 * 3) * (3 - 1))) == (((2 * 3) * (3 - 1)) + (2 * 3))) & ((x14 + ((2 * 3) * (3 - 1))) == x12) & (((2 * 3) + ((2 * 3) * (3 - 1))) == x11) & (x11 == Σ{0 ≤ y < 3}(((3 - y) + (2 * y)) + (3 - y))) & (x12 == Σ{0 ≤ y < 3}(((3 - y) + (2 * y)) + (3 - y)))",
+      "3 -> 3",
       "3 -> 3")
 
+    // after improving simplification this already works:
+    testOK( zip ,
+      "∀x:I . x3 -> x4 | ((x3 + ((2 * x) * (x - 1))) == (((2 * x) * (x - 1)) + (2 * x))) & ((x4 + ((2 * x) * (x - 1))) == x2) & (((2 * x) + ((2 * x) * (x - 1))) == x1) & (x1 == Σ{0 ≤ y < x}(((x - y) + (2 * y)) + (x - y))) & (x2 == Σ{0 ≤ y < x}(((x - y) + (2 * y)) + (x - y)))",
+      "∀x:I . 2 * x -> 2 * x",
+      "∀x:I . 2 * x -> 2 * x")
+    testOK( unzip ,
+      "∀x:I . x3 -> x4 | ((x3 + ((2 * x) * (x - 1))) == (((2 * x) * (x - 1)) + (2 * x))) & ((x4 + ((2 * x) * (x - 1))) == x2) & (((2 * x) + ((2 * x) * (x - 1))) == x1) & (x1 == Σ{0 ≤ y < x}(((y + 1) + (2 * ((x - y) - 1))) + (y + 1))) & (x2 == Σ{0 ≤ y < x}(((y + 1) + (2 * ((x - y) - 1))) + (y + 1)))",
+      "∀x:I . 2 * x -> 2 * x",
+      "∀x:I . 2 * x -> 2 * x")
+    testOK( sequencer ,
+      "∀z:I . (1^z) * x9 -> (1^z) * (0^z) | ((x4 + x10) == ((1 * z) + x13)) & ((2 * z) == x3) & ((x3 + ((2 * z) * (z - 1))) == (((2 * z) * (z - 1)) + (2 * z))) & ((x4 + ((2 * z) * (z - 1))) == x2) & (((2 * z) + ((2 * z) * (z - 1))) == x1) & (x1 == Σ{0 ≤ y < z}(((y + 1) + (2 * ((z - y) - 1))) + (y + 1))) & (x2 == Σ{0 ≤ y < z}(((y + 1) + (2 * ((z - y) - 1))) + (y + 1))) & ((x9 + z) == ((z - 1) + 1)) & ((x10 + z) == x8) & ((2 + (2 * (z - 1))) == x7) & ((1 + (z - 1)) == (1 + (1 * (z - 1)))) & (1 == 1) & (1 == 1) & ((x7 + ((2 * z) * (z - 1))) == (((2 * z) * (z - 1)) + (2 * z))) & ((x8 + ((2 * z) * (z - 1))) == x6) & (((2 * z) + ((2 * z) * (z - 1))) == x5) & (x5 == Σ{0 ≤ y < z}(((y + 1) + (2 * ((z - y) - 1))) + (y + 1))) & (x6 == Σ{0 ≤ y < z}(((y + 1) + (2 * ((z - y) - 1))) + (y + 1))) & (x14 == (2 * z)) & ((x13 + ((2 * z) * (z - 1))) == (((2 * z) * (z - 1)) + (2 * z))) & ((x14 + ((2 * z) * (z - 1))) == x12) & (((2 * z) + ((2 * z) * (z - 1))) == x11) & (x11 == Σ{0 ≤ y < z}(((z - y) + (2 * y)) + (z - y))) & (x12 == Σ{0 ≤ y < z}(((z - y) + (2 * y)) + (z - y)))",
+      "∀z:I . z -> z",
+      "∀z:I . z -> z")
 
 
     testTypeError(lam(x,lam(x,"fifo"^(x+y))))   // var x is not fresh
     testTypeError(lam(x,lam(y,"fifo"^(x+z))))   // var z not found
     testTypeError(Tr(2,("fifo"^3) & (id * (id^3)))) // unification fails (clearly false after eval)
     testTypeError(lam(x,id^x) & lam(x,"fifo"^x))   // arguments not disjoint
-    testTypeError(zip)       // constraints with a sum until "x" - no variables are supported here.
-    testTypeError(unzip)     // constraints with a sum until "x" - no variables are supported here.
-    testTypeError(sequencer) // constraints with a sum until "z" - no variables are supported here.
+//    testTypeError(zip)       // constraints with a sum until "x" - no variables are supported here.
+//    testTypeError(unzip)     // constraints with a sum until "x" - no variables are supported here.
+//    testTypeError(sequencer) // constraints with a sum until "z" - no variables are supported here.
 
   }
 
 
   private def testOK(c:Connector,typString:String,evalType:String,concType:String) {
+    println(Show(c))
     // 1 - build derivation tree
     val oldtyp = TypeCheck.check(c)
+    println(" - type(pre-subst): "+Show(oldtyp))
+    println(" - simplified cnst: "+Show(Simplify(oldtyp.const)))
     // 2 - unify constraints and get a substitution
     val (subst,rest) = Unify.getUnification(oldtyp.const)
+    println(" [ subst:  "+subst+" ]")
+    println(" [ rest:   "+Show(rest)+" ]")
     // 3 - apply substitution to the type
     val typ = subst(oldtyp)
+    println(" - type(pos-subst): "+Show(typ))
     // 4 - evaluate (simplify) resulting type (eval also in some parts of the typecheck).
-    val typev = Eval(typ)
+    val typev = Simplify(typ)
+    println(" - type(pos-eval) : "+Show(typev))
     // 5 - solve rest of the constraints
     //    val newsubst = Solver.solve(typev.const)
     val newsubst = Solver.solve(typev)
     if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
+    println(" [ subst2: "+newsubst+" ]")
     // 6 - apply the new substitution to the previous type and eval
     val typev2 = Eval(newsubst.get(typev))
-    // print and check
-    println(Show(c))
-    println(" - type(pre-subst): "+Show(oldtyp))
-    println(" - type(pos-subst): "+Show(typ))
-    println(" - type(pos-eval) : "+Show(typev))
     println(" - type(pos-solv) : "+Show(typev2))
+    // print and check
     // println(" - rest(eval-alws): "+show(rest))
-    println(" - subst:  "+subst)
-    println(" - subst2: "+newsubst)
+//    println(" - original   const: "+Show(        (oldtyp.const)))
     // println(" - solve!: "+typev.const+"\n --"+Solver.solve(typev.const))
     // println(" - apply unif: "+(subst(typ)))
-    assertEquals(typString,Show(typ))
-    assertEquals(evalType,Show(typev))
-    assertEquals(concType,Show(typev2))
+    assertEquals(typString,Show(oldtyp)) // type after derivation tree, before unification
+    assertEquals(evalType,Show(typev))   // type after substituting based on unification and evaluating
+    assertEquals(concType,Show(typev2))  // type after constraint solving and evaluating
   }
   
   private def testTypeError(c:Connector) = try {
     val oldtyp = TypeCheck.check(c)
     val (subst,rest) = Unify.getUnification(oldtyp.const)
-    val _ = Solver.solve(Eval(subst(oldtyp)).const)
+    val _ = Solver.solve(Simplify(subst(oldtyp)).const)
     throw new RuntimeException("Type error not found in " + Show(c) + " : " + oldtyp)
   }
   catch {

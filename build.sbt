@@ -10,6 +10,7 @@ libraryDependencies += "org.choco-solver" % "choco-solver" % "3.3.1-j7"
 
 libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.12"
 
+libraryDependencies += "io.github.nicolasstucki" %% "multisets" % "0.3"
 
 
 //libraryDependencies += "org.matheclipse" % "matheclipse-parser" % "0.0.7"

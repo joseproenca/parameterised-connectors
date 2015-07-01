@@ -23,6 +23,8 @@ object Solver extends App {
 
   private def MAX_INT:Int =  1000//VariableFactory.MAX_INT_BOUND
   private def MIN_INT:Int = 0//VariableFactory.MIN_INT_BOUND
+  private def MAX_INT_TMP:Int = 1000//VariableFactory.MAX_INT_BOUND
+  private def MIN_INT_TMP:Int = -1000//VariableFactory.MIN_INT_BOUND
   private def TIME_LIMIT = 5000 // 5 seconds
 
 
@@ -166,14 +168,15 @@ object Solver extends App {
     else None
   }
 
-  private def genFreshIVar(): IntVar = genFreshIVar(MIN_INT,MAX_INT)
+  // get a choco variable for an internal (intermediate) variable
+  private def genFreshIVar(): IntVar = genFreshIVar(MIN_INT_TMP,MAX_INT_TMP)
   private def genFreshIVar(from:Int,to:Int): IntVar = {
     seed += 1
     // note: not added to list of cached variables.
     VariableFactory.bounded("__"+(seed-1),from,to,solver)
   }
 
-
+  // get a choco variable for a user-defined variable
   private def getIVar(v:String): IntVar = {
     if (intVars contains v) intVars(v)
     else {
@@ -188,6 +191,7 @@ object Solver extends App {
     case Add(e1, e2) => combineIExpr(e1,e2,"+")
     case Sub(e1, e2) => combineIExpr(e1,e2,"-")
     case Mul(e1, e2) => combineIExpr(e1,e2,"*")
+//    case Div(e1, e2) => combineIExpr(e1,e2,"/")
     case Sum(x, IVal(from), IVal(to), e) =>
       if (from < to){ // "from" did not reach "to" yet
         val e1 = Substitution(x,IVal(from)).apply(e)
@@ -221,6 +225,7 @@ object Solver extends App {
         case "+" => c = arithm(v, "=", i1+i2)
         case "-" => c = arithm(v, "=", i1-i2)
         case "*" => c = arithm(v, "=", i1*i2)
+        case "/" => c = arithm(v, "=", i1/i2)
         case _ => throw new UnhandledOperException("unexpected operator: "+op)
       }
       solver.post(c)
@@ -232,6 +237,8 @@ object Solver extends App {
           solver.post(arithm(v,"=",getIVar(x),op,i))
         case "*" =>
           solver.post(times(getIVar(x),i,v))
+        case "/" =>
+          solver.post(eucl_div(getIVar(x),VariableFactory.fixed(i,solver),v))
       }
       v
     case (IVal(i),IVar(x)) => // i 'op' x (3-x --> -x + 3)
@@ -243,6 +250,8 @@ object Solver extends App {
           solver.post(arithm(v,"=",VariableFactory.minus(getIVar(x)),"+",i))
         case "*" =>
           solver.post(times(getIVar(x),i,v))
+        case "/" =>
+          solver.post(eucl_div(VariableFactory.fixed(i,solver),getIVar(x),v))
       }
       v
     case _ => // exp1 'op' exp2

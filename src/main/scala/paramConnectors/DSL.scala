@@ -93,7 +93,7 @@ object DSL {
     val (subst,rest) = Unify.getUnification(oldtyp.const)
     // 3 - apply substitution to the type
     val typ = subst(oldtyp)
-    // 4 - evaluate (simplify) resulting type (eval also in some parts of the typecheck).
-    Eval(typ)
+    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
+    Simplify(typ)
   }
 }

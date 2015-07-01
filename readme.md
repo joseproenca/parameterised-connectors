@@ -44,19 +44,24 @@ typeOf( lam(x,oneToTwo^x)(2) )
 // returns 2 -> 4
 
 typeOf(   lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
-// returns ∀x:I,n:I . x + x -> x + x
+// returns ∀x:I,n:I . 2 * x -> 2 * x
 typeTree( lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 // returns ∀x:I,n:I . x + x -> n | (x + x) == n
 
 typeOf(    lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
-// returns 1 -> 1
+// returns ∀x:I . 1 -> 1
 typeTree( lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
 // returns ∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1))
 //                         & ((x2 + (x - 1)) == x)
 //                         & ((1 + (x - 1)) == x)
 
-typeOf( lam(n, id^x ^ x<--n) )
-// returns ∀n:I . Σ{0 ≤ x < n}x -> Σ{0 ≤ x < n}x
+typeOf(   lam(n, id^x ^ x<--n) )
+// returns ∀n:I . x1 -> x2 | (n == ((n * n) + (-2 * x1)))
+//                         & (n == ((n * n) + (-2 * x2)))
+typeTree( lam(n, id^x ^ x<--n) )
+// returns ∀n:I . x1 -> x2 | (x1 == Σ{0 ≤ x < n}x) & (x2 == Σ{0 ≤ x < n}x)
+typeInstance(lam(n, id^x ^ x<--n) )
+// returns © 0 -> 0
 
 typeOf(   lam(n, id^x ^ x<--n)(3) )
 // returns 3 -> 3
@@ -64,13 +69,13 @@ typeTree( lam(n, id^x ^ x<--n)(3) )
 // returns x1 -> x2 | (x1 == 3) & (x2 == 3)
 
 typeOf( lam(x,Tr(x,id^3)) )
-// returns ∀x:I . x1 -> x2 | ((x1 + x) == 3) & ((x2 + x) == 3)
+// returns ∀x:I . x1 -> x1
 typeInstance( lam(x,Tr(x,id^3)) )
 // returns © 0 -> 0
 ```
 
 Even more examples can be found in our [test suite](https://github.com/joseproenca/parameterised-connectors/blob/master/src/test/scala/paramConnectors/TestTypeCheck.scala).
 
-Observe that an instance of the type of ```lam(x,Tr(x,id^3))``` is  ```© 0 -> 0```. The initial symbol means that this is a concrete solution, i.e., when trying to solve the constraints multiple solutions were found for the variables of the type, and one particular was chosen. Whenever the ```©``` symbol does not appear when requesting an instance of a type we are guaranteed to have the most general type.
+Observe that an instance of the type of ```lam(x,Tr(x,id^3))``` is  ```© 0 -> 0```. The initial symbol means that this is a concrete solution, i.e., this is a particular instance of the type that satisfies the constraints. In practice, this means that  when trying to solve the constraints multiple solutions were found for the variables of the type, and one particular was chosen. Whenever the ```©``` symbol does not appear when requesting an instance of a type we are guaranteed to have the most general type, as one would expect from a type.
 
 The practical price to pay for knowing wether a type is concrete or not is a second run of the constraint solving, this time negating the previous assignment for the variables in the type.

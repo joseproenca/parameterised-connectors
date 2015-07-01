@@ -40,6 +40,7 @@ object Show {
     case Add(e1,e2) => s"${showP(e1)} + ${showP(e2)}"
     case Sub(e1,e2) => s"${showP(e1)} - ${showP(e2)}"
     case Mul(e1,e2) => s"${showP(e1)} * ${showP(e2)}"
+//    case Div(e1,e2) => s"${showP(e1)} / ${showP(e2)}"
     case Sum(x,from,to,e) => s"Σ{${apply(from)} ≤ ${x.x} < ${apply(to)}}${showP(e)}"
     case ITE(b,ifTrue,ifFalse) =>
       s"if ${showP(b)} then ${showP(ifTrue)} else ${showP(ifFalse)}"

@@ -16,19 +16,19 @@ object Unify {
    * @return a general unification and postponed constraints.
    */
   def getUnification(const:BExpr): (Substitution,BExpr) =
-    getUnification(Eval(const),BVal(b=true))
+    getUnification(Simplify(const),BVal(b=true))
 
   private def getUnification(const:BExpr,rest:BExpr): (Substitution,BExpr) = const match {
     case And(BVal(true)::exps) => getUnification(And(exps),rest)
     case And(BVal(false)::_)   => throw new TypeCheckException("Search for unification failed - constraint unsatisfiable.")
     case And((x@BVar(_))::exps) =>
       val s = Substitution(x,BVal(b=true))
-      val (news,newrest) = getUnification(s(And(exps)),rest)
+      val (news,newrest) = getUnification(Simplify(s(And(exps))),rest)
       (news + (x,BVal(b=true)), newrest)
     case And(EQ(e1, e2)::exps) if e1 == e2 => getUnification(And(exps),rest)
     case And(EQ(x@IVar(_), e2)::exps) if isFree(x,e2) =>
       val s = Substitution(x , e2)
-      val (news,newrest) = getUnification( s(And(exps)),rest)
+      val (news,newrest) = getUnification( Simplify(s(And(exps))),rest)
       (news + (x,e2), newrest)
     // swap arguments
     case And(EQ(e1,x@IVar(_))::exps) =>
