@@ -75,7 +75,7 @@ object DSL {
     if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
     if (newrest != BVal(true)) newsubst.get.setConcrete()
     // 6 - apply the new substitution to the previous type and eval
-    Eval(newsubst.get(typev))
+    Eval.instantiate(newsubst.get(typev))
   }
 
   /**

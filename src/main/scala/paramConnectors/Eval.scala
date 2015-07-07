@@ -121,6 +121,23 @@ object Eval {
   def apply(t:Type): Type =
     Type(t.args,apply(t.i),apply(t.j),apply(t.const),t.isGeneral)
 
+  def instantiate(t:Type): Type = {
+    val s = Solver.solve(t.const)
+    if (s.isEmpty)
+      throw new TypeCheckException("no solutions found for "+Show(t.const))
+    var subst = s.get
+    for (v <- t.args.vars) {
+      v match {
+        case x@IVar(_) =>
+          if (subst(x) == x) subst += (x,IVal(1))
+        case x@BVar(_) =>
+          if (subst(x) == x) subst += (x,BVal(true))
+      }
+    }
+    val unchanged = (t.i == subst(t.i)) && (t.j == subst(t.j))
+    apply(subst(Type(Arguments(),t.i,t.j,t.const,t.isGeneral && unchanged)))
+  }
+
 //  def instantiate(t:Type): Type = {
 //    val fv = Solver.freeVars(t.i)
 //    val fvj = Solver.freeVars(t.j)

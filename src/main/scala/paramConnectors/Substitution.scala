@@ -161,8 +161,11 @@ class Substitution(private val items:List[Item]) {
    * @return extra constraints
    */
   def getConstBoundedVars(typ:Type): BExpr = {
+    var newvars = typ.args.vars.toSet
+//    var newVars = relevant
+    var history = Set[Var]()
+    var round = Set[Var]()
 //    // note: only relevant if there are unbounded variables in the interfaces
-    val bounded = typ.args.vars
 //    var hasFreeVars = false
 //    for (v <- Utils.freeVars(typ.i * typ.j)) {
 //      if (!(bounded contains v)) hasFreeVars = true
@@ -171,29 +174,26 @@ class Substitution(private val items:List[Item]) {
 //      return BVal(true)
 
     var newrest:Set[BExpr] = Set()
-    for (it <- items) it match {
-      case IItem(v, e) =>
-//        println(s"### checking if ${Show(v)} == ${Show(e)} has vars in $bounded.")
-        if (bounded contains v) {
-          newrest += (v === e)
-//          println("##### yes!")
-        }
-        for (x <- Utils.freeVars(e))
-          if (bounded contains x) {
-            newrest += (v === e) //TODO: avoid repetition (not a big problem)
-//            println("##### yes!")
+    while (newvars.nonEmpty) {
+      history ++= newvars
+      round = newvars
+      newvars = Set[Var]()
+      for (it <- items) it match {
+        case IItem(v, e) =>
+          //        println(s"### checking if ${Show(v)} == ${Show(e)} has vars in $bounded.")
+          if (round contains v) {
+            newrest += (v === e)
+            newvars ++= (Utils.freeVars(e) -- history)
+            //          println("##### yes!")
           }
-      case BItem(v, e) =>
-//        println(s"### checking if ${Show(v)} == ${Show(e)} has vars in $bounded.")
-        if (bounded contains v) {
-          newrest += (v === e)
-//          println("##### yes!")
-        }
-        for (x <- Utils.freeVars(e))
-          if (bounded contains x) {
-            newrest += (v === e) //TODO: avoid repetition (not a big problem)
-//            println("##### yes!")
+        case BItem(v, e) =>
+          //        println(s"### checking if ${Show(v)} == ${Show(e)} has vars in $bounded.")
+          if (round contains v) {
+            newrest += (v === e)
+            newvars ++= (Utils.freeVars(e) -- history)
+            //          println("##### yes!")
           }
+      }
     }
     newrest.foldLeft[BExpr](BVal(true))(_ & _)
   }

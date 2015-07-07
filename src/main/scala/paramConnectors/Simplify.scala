@@ -169,13 +169,15 @@ object Simplify {
       if ((c/gcdc) == -1 && v.size == 1) {
         val res = EQ(lits2IExpr(OptLits(Lits(optLits.lits.map.mapValues(_ / gcdc) - v), optLits.rest)), IVar(v.head))
 //        println(s"#### checking if ${v.head} is a temp variable.")
-        if (isTemp(v.head)) return res
+        if (isTemp(v.head))
+          return res
         else todo = Some(res)
       }
       if ((c/gcdc) == 1 && v.size == 1) {
         val res = EQ( IVar(v.head), lits2IExpr(OptLits(Lits((optLits.lits.map - v).mapValues(-_/gcdc)),optLits.rest.map(Mul(_,IVal(-1))))))
 //        println(s"#### checking if ${v.head} is a temp variable.")
-        if (isTemp(v.head)) return res
+        if (isTemp(v.head))
+          return res
         else todo = Some(res)
       }
     }
