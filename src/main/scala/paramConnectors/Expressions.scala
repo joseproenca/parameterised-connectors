@@ -1,6 +1,6 @@
 package paramConnectors
 
-sealed trait Var
+sealed trait Var {def x:String}
 
 sealed abstract class Expr
 
@@ -14,10 +14,10 @@ sealed abstract class IExpr extends Expr {
   def *(that:IExpr) = Mul(this,that)
   def ===(that:IExpr) = EQ(this,that)
   def >(that:IExpr)   = GT(this,that)
+  def <(that:IExpr)   = LT(this,that)
   // TODO: make these primitives of BExpr (and of the constraint solver)
-  def <(that:IExpr)  = Not(GT(this,that)) & Not(EQ(this,that))
-  def >=(that:IExpr)   = GT(this,that) | EQ(this,that)
-  def <=(that:IExpr)  = Not(GT(this,that))
+  def >=(that:IExpr)  = GT(this,that) | EQ(this,that)
+  def <=(that:IExpr)  = LT(this,that) | EQ(this,that)
 
 }
 
@@ -48,6 +48,8 @@ sealed abstract class BExpr extends Expr {
     case (_,And(es)) => And(this::es)
     case _ => And(List(this,that))
   }
+  def ===(that:BExpr) =
+    (this & that) | (Not(this) & Not(that))
   def |(that:BExpr) = Or(this,that)
   def ?(that:IExpr) = new IfWrap(this,that)
 }
@@ -63,4 +65,5 @@ case class Or(e1:BExpr,e2:BExpr) extends BExpr
 case class Not(e:BExpr) extends BExpr
 case class EQ(e1:IExpr,e2:IExpr) extends BExpr
 case class GT(e1:IExpr,e2:IExpr) extends BExpr
+case class LT(e1:IExpr,e2:IExpr) extends BExpr
 // TODO: add GT - useful for imposing certain interfaces to be positive

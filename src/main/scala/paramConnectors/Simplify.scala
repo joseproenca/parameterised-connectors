@@ -103,11 +103,12 @@ object Simplify {
    * @param t type being simplified
    * @return simplified type
    */
-  def apply(t:Type): Type =
-    Type(t.args,apply(t.i),apply(t.j),apply(t.const),t.isGeneral)
+  def apply(t:Type): Type = {
+    Type(t.args, apply(t.i), apply(t.j), apply(t.const), t.isGeneral)
+  }
 
   def apply(itf:Interface): Interface =
-    Port(apply(Eval.interfaceSem(itf)))
+    Port(apply(Utils.interfaceSem(itf)))
 
 
   def simpAux(e:BExpr): BExpr = e match {
@@ -126,6 +127,7 @@ object Simplify {
 //      // place a "0" on the right of "=="
 //        EQ( lits2IExpr(OptLits(Lits(eq.lits.map        ),eq.rest)) , IVal(0) )
     case GT(e1, e2) => GT(apply(e1),apply(e2))
+    case LT(e1, e2) => LT(apply(e1),apply(e2))
   }
 
   private def optimiseSums(optLits: OptLits): BExpr = {
@@ -138,7 +140,7 @@ object Simplify {
 //        if (degree == 0) --> taken care by iexpr2lits
         if (degree  == 1) {
           val twicesum = (Substitution(x,to-IVal(1))(e) + Substitution(x,from)(e)) * (to - from)
-          println(s"found degree 1: ${Show(r)} - simplifying ${Show(lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2))} == ${Show(IVal(0) - twicesum)}")
+//          println(s"found degree 1: ${Show(r)} - simplifying ${Show(lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2))} == ${Show(IVal(0) - twicesum)}")
           return simpAux( lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2) === IVal(0) - twicesum )
         }
       case Sub(IVal(0), Sum(x,from,to,e)) =>
@@ -149,7 +151,7 @@ object Simplify {
         //        if (degree == 0) --> taken care by iexpr2lits
         if (degree  == 1) {
           val twicesum = (Substitution(x,to-IVal(1))(e) + Substitution(x,from)(e)) * (to - from)
-          println(s"found degree 1: ${Show(r)} - simplifying ${Show(Simplify(lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2)))} == ${Show(Simplify(twicesum))}")
+//          println(s"found degree 1: ${Show(r)} - simplifying ${Show(Simplify(lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2)))} == ${Show(Simplify(twicesum))}")
           return simpAux( lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2) === twicesum )
         }
       case _ =>
@@ -161,15 +163,27 @@ object Simplify {
       val coefs = optLits.lits.map.values.map(Math.abs).filterNot(_==0)
       gcdc = gcdm(coefs)
     }
+    // hack to prioritise replacing temporary variables (x[0-9]+)
+    var todo: Option[BExpr] = None
     for ((v,c) <- optLits.lits.map) { // TODO: improve by checking if variable only appears once before moving
-      if ((c/gcdc) == -1 && v.size == 1)
-        return EQ( lits2IExpr(OptLits(Lits(optLits.lits.map.mapValues(_/gcdc) - v),optLits.rest)) , IVar(v.head) )
+      if ((c/gcdc) == -1 && v.size == 1) {
+        val res = EQ(lits2IExpr(OptLits(Lits(optLits.lits.map.mapValues(_ / gcdc) - v), optLits.rest)), IVar(v.head))
+//        println(s"#### checking if ${v.head} is a temp variable.")
+        if (isTemp(v.head)) return res
+        else todo = Some(res)
+      }
       if ((c/gcdc) == 1 && v.size == 1) {
-        return EQ( IVar(v.head), lits2IExpr(OptLits(Lits((optLits.lits.map - v).mapValues(-_/gcdc)),optLits.rest.map(Mul(_,IVal(-1))))))
+        val res = EQ( IVar(v.head), lits2IExpr(OptLits(Lits((optLits.lits.map - v).mapValues(-_/gcdc)),optLits.rest.map(Mul(_,IVal(-1))))))
+//        println(s"#### checking if ${v.head} is a temp variable.")
+        if (isTemp(v.head)) return res
+        else todo = Some(res)
       }
     }
+    // if no variable with -1 or 1 coefficient outside "tempArgs" was found, try within args
+    if (todo.isDefined)
+      return todo.get
     // no variable with "-1" or "1" coefficient found - try to put a number (with no variables)
-    if (optLits.lits.map contains Bag())
+    else if (optLits.lits.map contains Bag())
     // place the coefficient with no variable on the right of "=="
       EQ( lits2IExpr(OptLits(Lits(optLits.lits.map - Bag()),optLits.rest)) , IVal(-optLits.lits.map(Bag())) )
     else
@@ -179,6 +193,7 @@ object Simplify {
 
   ////
 
+  private def isTemp(x:String) =  x.matches("x[0-9]+")
   private def join(l1:OptLits,l2:OptLits): OptLits =
     OptLits(Lits(join(l1.lits.map , l2.lits.map)), l1.rest++l2.rest)
   private def join(map1:Map[Bag[String],Int],map2:Map[Bag[String],Int]): Map[Bag[String],Int] = {

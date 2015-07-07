@@ -56,6 +56,7 @@ object Show {
     case BVar(x)     => x
     case EQ(e1, e2)  => s"${showP(e1)} == ${showP(e2)}"
     case GT(e1, e2)  => s"${showP(e1)} > ${showP(e2)}"
+    case LT(e1, e2)  => s"${showP(e1)} < ${showP(e2)}"
     case And(Nil)    => ""
     case And(e::Nil) => apply(e)
     case And(es)     => es.map(showP).mkString(" & ")

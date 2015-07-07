@@ -15,63 +15,49 @@ object Unify {
    * @param const constraint where a unification is searched for.
    * @return a general unification and postponed constraints.
    */
-  def getUnification(const:BExpr): (Substitution,BExpr) =
-    getUnification(Simplify(const),BVal(b=true))
+  def getUnification(const:BExpr,bounded:List[Var]): (Substitution,BExpr) =
+    getUnification(Simplify(const),BVal(b=true),bounded)
 
-  private def getUnification(const:BExpr,rest:BExpr): (Substitution,BExpr) = const match {
-    case And(BVal(true)::exps) => getUnification(And(exps),rest)
+  private def getUnification(const:BExpr,rest:BExpr,bounded:List[Var]): (Substitution,BExpr) = const match {
+    case And(BVal(true)::exps) => getUnification(And(exps),rest,bounded)
     case And(BVal(false)::_)   => throw new TypeCheckException("Search for unification failed - constraint unsatisfiable.")
     case And((x@BVar(_))::exps) =>
       val s = Substitution(x,BVal(b=true))
-      val (news,newrest) = getUnification(Simplify(s(And(exps))),rest)
+      val (news,newrest) = getUnification(Simplify(s(And(exps))),rest,bounded)
       (news + (x,BVal(b=true)), newrest)
-    case And(EQ(e1, e2)::exps) if e1 == e2 => getUnification(And(exps),rest)
-    case And(EQ(x@IVar(_), e2)::exps) if isFree(x,e2) =>
-      val s = Substitution(x , e2)
-      val (news,newrest) = getUnification( Simplify(s(And(exps))),rest)
-      (news + (x,e2), newrest)
-    // swap arguments
-    case And(EQ(e1,x@IVar(_))::exps) =>
-      getUnification(And(EQ(x,e1)::exps),rest)
+    case And(EQ(e1, e2)::exps) if e1 == e2 => getUnification(And(exps),rest,bounded)
+    case And(EQ(x@IVar(_), e2)::exps) if Utils.isFree(x,e2) =>
+      substVar(x,e2,exps,rest,bounded)
+    case And(EQ(e1,x@IVar(_))::exps) if Utils.isFree(x,e1) =>
+      substVar(x,e1,exps,rest,bounded)
     // "equality"/"or" of general int expresions - postpone
-    case And((eq@EQ(_,_))::exps) => getUnification(And(exps),rest & eq)
-    case And((or@Or(_,_))::exps) => getUnification(And(exps),rest & or)
-    case And((gt@GT(_,_))::exps) => getUnification(And(exps),rest & gt)
+    case And((eq@EQ(_,_))::exps) => getUnification(And(exps),rest & eq,bounded)
+    case And((or@Or(_,_))::exps) => getUnification(And(exps),rest & or,bounded)
+    case And((gt@GT(_,_))::exps) => getUnification(And(exps),rest & gt,bounded)
+    case And((lt@LT(_,_))::exps) => getUnification(And(exps),rest & lt,bounded)
+    case And((nt@Not(_))::exps)  => getUnification(And(exps),rest & nt,bounded)
     //
+    case And(And(e1)::exps) => getUnification(And(e1:::exps),rest,bounded)
     case And(Nil) => (Substitution(),rest)
-    case other => getUnification(And(other::Nil),rest)
+    //
+    case _:BVal | _:BVar | _:EQ | _:GT | _:LT | _:Or | _:Not =>
+      getUnification(And(const :: Nil), rest,bounded)
   }
 
+  private def substVar(x:IVar,e:IExpr,exps:List[BExpr],rest:BExpr,bounded:List[Var]): (Substitution,BExpr) = {
+    val s = Substitution(x , e)
+    var (news,newrest) = getUnification( Simplify(s(And(exps))),rest,bounded)
+//    println(s"### checking if ${Show(x)} == ${Show(e)} has vars in $bounded.")
+//    if (bounded contains x) {
+//      newrest = newrest & EQ(x, e)
+//      println("##### yes!")
+//    }
+//    for (v <- Utils.freeVars(e))
+//      if (bounded contains v) {
+//        newrest = newrest & EQ(x,e) //TODO: avoid repetition (not a big problem)
+//        println("##### yes!")
+//      }
+    (news + (x,e), newrest)
 
-
-  def isFree(x:IVar,e:IExpr): Boolean = e match {
-    case `x` => false
-    case IVal(_) => true
-    case IVar(_) => true
-    case Add(e1, e2) => isFree(x,e1) && isFree(x,e2)
-    case Sub(e1, e2) => isFree(x,e1) && isFree(x,e2)
-    case Mul(e1, e2) => isFree(x,e1) && isFree(x,e2)
-    case Sum(`x`, from, to, _) => isFree(x,from) && isFree(x,to)
-    case Sum(_, from, to, e2) => isFree(x,from) && isFree(x,to) && isFree(x,e2)
-    case ITE(b, ifTrue, ifFalse) => isFree(x,b) && isFree(x,ifTrue) && isFree(x,ifFalse)
   }
-
-  def isFree(x:IVar,e:BExpr): Boolean = e match {
-    case BVal(_) => true
-    case BVar(_) => true
-//    case IEQ(e1, e2) => free(x,e1) && free(x,e2)
-    case EQ(e1, e2) => isFree(x,e1) && isFree(x,e2)
-    case GT(e1, e2) => isFree(x,e1) && isFree(x,e2)
-    case And(Nil) => true
-    case And(e2::es) => isFree(x,e2) && isFree(x,And(es))
-    case Or(e1, e2) => isFree(x,e1) && isFree(x,e2)
-    case Not(e1) => isFree(x,e1)
-  }
-
-//  def free(x:IVar,itf:Interface): Boolean = itf match {
-//    case Tensor(i, j) => free(x,i) && free(x,j)
-//    case Port(a) => free(x,a)
-//    case Repl(i, a) => free(x,i) && free(x,a)
-//    case Cond(b, i1, i2) => free(x,b) && free(x,i1) && free(x,i2)
-//  }
 }

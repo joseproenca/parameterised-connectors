@@ -90,9 +90,12 @@ object Solver extends App {
       for ((x, v) <- boolVars)
         res +=(BVar(x), BVal(v.getValue == 1))
 
+      if (!typ.isGeneral)
+        return Some(res)
+
       // set concrete if negating the relevant vars yields more solutions
       var newExp = typ.const
-      val vars:Iterable[Var] = freeVars(Eval.interfaceSem(Tensor(typ.i,typ.j))) //-- typ.args.vars
+      val vars:Iterable[Var] = Utils.freeVars(Tensor(typ.i,typ.j)) //-- typ.args.vars
 //      println(s"#### got relevant vars: ${vars.map(Show.showVar)}")
       for (v <- vars) v match {
         case IVar(x) =>
@@ -117,26 +120,6 @@ object Solver extends App {
     }
     else
       None
-  }
-
-  private def freeVars(e:IExpr):Set[Var] = e match {
-    case IVal(n) => Set()
-    case x@IVar(_) => Set(x)
-    case Add(e1, e2) => freeVars(e1) ++ freeVars(e2)
-    case Sub(e1, e2) => freeVars(e1) ++ freeVars(e2)
-    case Mul(e1, e2) => freeVars(e1) ++ freeVars(e2)
-    case Sum(x, from, to, e1) => (freeVars(e1)-x) ++ freeVars(from) ++ freeVars(to)
-    case ITE(b, ifTrue, ifFalse) => freeVars(b) ++ freeVars(ifTrue) ++ freeVars(ifFalse)
-  }
-  private def freeVars(e:BExpr): Set[Var] = e match {
-    case BVal(b) => Set()
-    case x@BVar(_) => Set(x)
-    case EQ(e1, e2) => freeVars(e1) ++ freeVars(e2)
-    case GT(e1, e2) => freeVars(e1) ++ freeVars(e2)
-    case And(Nil) => Set()
-    case And(e1::es) => freeVars(e1) ++ freeVars(And(es))
-    case Or(e1, e2) => freeVars(e1) ++ freeVars(e2)
-    case Not(e1) => freeVars(e1)
   }
 
   private def solveAux(bExpr: BExpr): Option[CSolver] = {
@@ -256,7 +239,13 @@ object Solver extends App {
       v
     case _ => // exp1 'op' exp2
       val v = genFreshIVar()
-      solver.post(sum(List(getIVar(e1),getIVar(e2)).toArray, v))
+      op match {
+        case "+" => solver.post(sum(List(getIVar(e1),getIVar(e2)).toArray, v))
+        case "-" => solver.post(sum(
+          List(getIVar(e1),VariableFactory.minus(getIVar(e2))).toArray, v))
+        case "*" => solver.post(times(getIVar(e1),getIVar(e2), v))
+        case "/" => solver.post(eucl_div(getIVar(e1),getIVar(e2), v))
+      }
       v
   }
 
@@ -284,6 +273,10 @@ object Solver extends App {
     case GT(IVar(x), IVal(i)) => arithm(getIVar(x),">",i)
     case GT(IVal(i), exp) => arithm(getIVar(exp),"<",i)
     case GT(exp1, exp2) => arithm(getIVar(exp1),">",getIVar(exp2))
+    case LT(IVal(i1), IVal(i2)) => if (i1<i2) TRUE(solver) else FALSE(solver)
+    case LT(IVar(x), IVal(i)) => arithm(getIVar(x),"<",i)
+    case LT(IVal(i), exp) => arithm(getIVar(exp),">",i)
+    case LT(exp1, exp2) => arithm(getIVar(exp1),"<",getIVar(exp2))
   }
 
 

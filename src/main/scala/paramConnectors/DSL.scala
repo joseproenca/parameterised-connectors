@@ -30,6 +30,7 @@ object DSL {
   val lossy = Prim("lossy",1,1)
   val dupl = Prim("dupl",1,2)
   val merger = Prim("merger",2,1)
+  val drain = Prim("drain",2,0)
 
 
 
@@ -58,16 +59,49 @@ object DSL {
    * @return the type of the connector - return a concrete type if one is found, otherwise the general one
    */
   def typeInstance(c:Connector): Type = {
-    // 1 - type check until the unification phase
-    val typev = typeUnify(c)
-    // 2 - solve rest of the constraints
+    // 1 - build derivation tree
+    val oldtyp = TypeCheck.check(c)
+    // 2 - unify constraints and get a substitution
+    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+    // 3 - apply substitution to the type
+    val tmptyp = subst(oldtyp)
+    val newrest = subst.getConstBoundedVars(oldtyp)
+    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
+    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
+    val typev = Simplify(typ)
+    // 5 - solve rest of the constraints
     //val newsubst = Solver.solve(typev.const)
     val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
     if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    // 3 - apply the new substitution to the previous type and eval
+    if (newrest != BVal(true)) newsubst.get.setConcrete()
+    // 6 - apply the new substitution to the previous type and eval
     Eval(newsubst.get(typev))
   }
 
+  /**
+   * Type check a connector (build tree, unify, and solve constraints)
+   * @param c connector to be type-checked
+   * @return a substitution used applied to the derivation tree to get an instance of a type
+   */
+  def typeSubstInstance(c:Connector): Substitution = {
+    // 1 - build derivation tree
+    val oldtyp = TypeCheck.check(c)
+    // 2 - unify constraints and get a substitution
+    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+    // 3 - apply substitution to the type
+    val tmptyp = subst(oldtyp)
+    val newrest = subst.getConstBoundedVars(oldtyp)
+    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
+    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
+    val typev = Simplify(typ)
+    // 5 - solve rest of the constraints
+    //val newsubst = Solver.solve(typev.const)
+    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
+    if (newrest != BVal(true)) newsubst.get.setConcrete()
+    // 6 - apply the new substitution to the previous type and eval
+    subst ++ newsubst.get
+  }
 
   /**
    * Build the derivation tree of a connector (if it exists)
@@ -90,9 +124,11 @@ object DSL {
     // 1 - build derivation tree
     val oldtyp = TypeCheck.check(c)
     // 2 - unify constraints and get a substitution
-    val (subst,rest) = Unify.getUnification(oldtyp.const)
+    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
     // 3 - apply substitution to the type
-    val typ = subst(oldtyp)
+    val tmptyp = subst(oldtyp)
+    val newrest = subst.getConstBoundedVars(oldtyp)
+    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
     // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
     Simplify(typ)
   }

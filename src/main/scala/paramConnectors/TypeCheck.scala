@@ -1,6 +1,6 @@
 package paramConnectors
 
-import Eval.interfaceSem
+import Utils.interfaceSem
 
 /**
  * Created by jose on 17/05/15.
@@ -157,6 +157,7 @@ object TypeCheck {
 //    case IEQ(e1, e2) => check(gamma,e1); check(gamma,e2)
     case EQ(e1, e2)  => check(gamma,e1); check(gamma,e2)
     case GT(e1, e2)  => check(gamma,e1); check(gamma,e2)
+    case LT(e1, e2)  => check(gamma,e1); check(gamma,e2)
     case And(Nil)    =>
     case And(e::es)  => check(gamma,e); check(gamma,And(es))
     case Or(e1, e2)  => check(gamma,e1); check(gamma,e2)

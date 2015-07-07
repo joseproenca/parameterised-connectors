@@ -50,5 +50,7 @@ class TestSolver {
     testConstrX( EQ(x + (y-1), (y-1) + 1), 1 )
     // x*2 = 4
     testConstrX ( EQ(x * 2, 4), 2)
+    // y = 2 * (x * x)
+    testConstr( y === ( 2 * (x * x)), shouldHold = true)
   }
 }

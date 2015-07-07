@@ -8,24 +8,12 @@ import paramConnectors.TypeCheck.TypeCheckException
 object Eval {
 
   /**
-   * Interprets an interface as an integer expression
-   * @param itf the interface to be interpreted
-   * @return
-   */
-  def interfaceSem(itf:Interface): IExpr = itf match {
-    case Tensor(i, j) => interfaceSem(i) + interfaceSem(j)
-    case Port(a) => a
-    case Repl(i, a) => interfaceSem(i) * a
-    case Cond(b, i1, i2) => ITE(b,interfaceSem(i1),interfaceSem(i2))
-  }
-
-  /**
    * Evaluates an interface by performing operations over known values
    * @param itf interface being evaluated
    * @return
    */
   def apply(itf:Interface): Interface =
-    Port(apply(interfaceSem(itf)))
+    Port(apply(Utils.interfaceSem(itf)))
 
   /**
    * Evaluates an expression by performing operations over known values
@@ -101,6 +89,11 @@ object Eval {
       case (a,b) if a == b => BVal(b=false)
       case (a,b) => GT(a,b)
     }
+    case LT(e1, e2) => (apply(e1),apply(e2)) match {
+      case (IVal(i1),IVal(i2)) => BVal(i1 < i2)
+      case (a,b) if a == b => BVal(b=false)
+      case (a,b) => LT(a,b)
+    }
     case And(Nil) => e
     case And(e1::es) => (apply(e1),apply(And(es))) match {
       case (BVal(true),ev) => ev
@@ -127,4 +120,11 @@ object Eval {
    */
   def apply(t:Type): Type =
     Type(t.args,apply(t.i),apply(t.j),apply(t.const),t.isGeneral)
+
+//  def instantiate(t:Type): Type = {
+//    val fv = Solver.freeVars(t.i)
+//    val fvj = Solver.freeVars(t.j)
+//  }
+
+
 }

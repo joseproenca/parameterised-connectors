@@ -61,16 +61,16 @@ class TestTypeCheck {
       "2 -> 2")
     testOK(lam(x,lam(y,("fifo"^x) & (id^y))),
       "∀x:I,y:I . 1^x -> 1^y | (1 * x) == (1 * y)",
-      "∀x:I,y:I . y -> y",
-      "∀x:I,y:I . y -> y")
+      "∀x:I,y:I . y -> y | x == y",
+      "© 0 -> 0")
     testOK(lam(x,lam(y,("fifo"^x) & (id^y))) (3),
       "∀y:I . 1^3 -> 1^y | (1 * 3) == (1 * y)",
-      "3 -> 3",
-      "3 -> 3")
+      "∀y:I . 3 -> 3 | y == 3",
+      "© 3 -> 3")
     testOK(lam(x, (id^x) * (id^x)) & lam(y,"fifo"^y),
       "∀x:I,y:I . (1^x) * (1^x) -> 1^y | ((1 * x) + (1 * x)) == (1 * y)",
-      "∀x:I,y:I . 2 * x -> 2 * x",
-      "∀x:I,y:I . 2 * x -> 2 * x")
+      "∀x:I,y:I . 2 * x -> 2 * x | y == (2 * x)",
+      "© 0 -> 0")
     testOK(lam(y, (id^x)^x<--y),
       "∀y:I . x1 -> x2 | (x1 == Σ{0 ≤ x < y}x) & (x2 == Σ{0 ≤ x < y}x)",
       "∀y:I . x1 -> x2 | (y == ((y * y) + (-2 * x1))) & (y == ((y * y) + (-2 * x2)))",
@@ -82,8 +82,10 @@ class TestTypeCheck {
       "3 -> 3")
     testOK ( lam(x,Tr(x,id^3)) ,
       "∀x:I . x1 -> x2 | ((x1 + x) == (1 * 3)) & ((x2 + x) == (1 * 3))",
-      "∀x:I . x1 -> x1" ,
-      "∀x:I . x1 -> x1" )
+//      "∀x:I . x1 -> x1 | x == ((-1 * x1) + 3)" ,
+//      "© 3 -> 3" )
+      "∀x:I . (-1 * x) + 3 -> 3 + (-1 * x) | (x1 == ((-1 * x) + 3)) & (x2 == (3 + (-1 * x)))",
+      "© 0 -> 0" )
     // conditionals
     testOK( lam("a":B, Choice("a",id,dupl)) ,
       "∀a:B . 1 +a+ 1 -> 1 +a+ 2" ,
@@ -98,6 +100,10 @@ class TestTypeCheck {
       "∀x:I . 1^x -> 1^x | x > 5",
       "∀x:I . x -> x | x > 5",
       "© 6 -> 6")
+    testOK( lam(x, lam(y, (fifo^x) & (id^y) | (x<5))),
+      "∀x:I,y:I . 1^x -> 1^y | ((1 * x) == (1 * y)) & (x < 5)",
+      "∀x:I,y:I . y -> y | (y < 5) & (x == y)",
+      "© 0 -> 0")
     // from the paper
     val seqfifo = lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x)))
     val zip = lam(x,
@@ -129,17 +135,19 @@ class TestTypeCheck {
     // after improving simplification this already works:
     testOK( zip ,
       "∀x:I . x3 -> x4 | ((x3 + ((2 * x) * (x - 1))) == (((2 * x) * (x - 1)) + (2 * x))) & ((x4 + ((2 * x) * (x - 1))) == x2) & (((2 * x) + ((2 * x) * (x - 1))) == x1) & (x1 == Σ{0 ≤ y < x}(((x - y) + (2 * y)) + (x - y))) & (x2 == Σ{0 ≤ y < x}(((x - y) + (2 * y)) + (x - y)))",
-      "∀x:I . 2 * x -> 2 * x",
-      "∀x:I . 2 * x -> 2 * x")
+//      "∀x:I . 2 * x -> 2 * x | (x3 == (2 * x)) & (x4 == ((x2 + (2 * x)) + (-2 * (x * x)))) & (x1 == (2 * (x * x))) & (x2 == (2 * (x * x)))",
+      "∀x:I . 2 * x -> 2 * x | (x3 == (2 * x)) & ((((2 * x) + (-2 * (x * x))) + x2) == x4) & (x1 == (2 * (x * x))) & (x4 == (2 * x))",
+      "© 0 -> 0")
     testOK( unzip ,
       "∀x:I . x3 -> x4 | ((x3 + ((2 * x) * (x - 1))) == (((2 * x) * (x - 1)) + (2 * x))) & ((x4 + ((2 * x) * (x - 1))) == x2) & (((2 * x) + ((2 * x) * (x - 1))) == x1) & (x1 == Σ{0 ≤ y < x}(((y + 1) + (2 * ((x - y) - 1))) + (y + 1))) & (x2 == Σ{0 ≤ y < x}(((y + 1) + (2 * ((x - y) - 1))) + (y + 1)))",
-      "∀x:I . 2 * x -> 2 * x",
-      "∀x:I . 2 * x -> 2 * x")
+//      "∀x:I . 2 * x -> 2 * x | (x3 == (2 * x)) & (x4 == ((x2 + (2 * x)) + (-2 * (x * x)))) & (x1 == (2 * (x * x))) & (x2 == (2 * (x * x)))",
+      "∀x:I . 2 * x -> 2 * x | (x3 == (2 * x)) & ((((2 * x) + (-2 * (x * x))) + x2) == x4) & (x1 == (2 * (x * x))) & (x4 == (2 * x))",
+      "© 0 -> 0")
     testOK( sequencer ,
       "∀z:I . (1^z) * x9 -> (1^z) * (0^z) | ((x4 + x10) == ((1 * z) + x13)) & ((2 * z) == x3) & ((x3 + ((2 * z) * (z - 1))) == (((2 * z) * (z - 1)) + (2 * z))) & ((x4 + ((2 * z) * (z - 1))) == x2) & (((2 * z) + ((2 * z) * (z - 1))) == x1) & (x1 == Σ{0 ≤ y < z}(((y + 1) + (2 * ((z - y) - 1))) + (y + 1))) & (x2 == Σ{0 ≤ y < z}(((y + 1) + (2 * ((z - y) - 1))) + (y + 1))) & ((x9 + z) == ((z - 1) + 1)) & ((x10 + z) == x8) & ((2 + (2 * (z - 1))) == x7) & ((1 + (z - 1)) == (1 + (1 * (z - 1)))) & (1 == 1) & (1 == 1) & ((x7 + ((2 * z) * (z - 1))) == (((2 * z) * (z - 1)) + (2 * z))) & ((x8 + ((2 * z) * (z - 1))) == x6) & (((2 * z) + ((2 * z) * (z - 1))) == x5) & (x5 == Σ{0 ≤ y < z}(((y + 1) + (2 * ((z - y) - 1))) + (y + 1))) & (x6 == Σ{0 ≤ y < z}(((y + 1) + (2 * ((z - y) - 1))) + (y + 1))) & (x14 == (2 * z)) & ((x13 + ((2 * z) * (z - 1))) == (((2 * z) * (z - 1)) + (2 * z))) & ((x14 + ((2 * z) * (z - 1))) == x12) & (((2 * z) + ((2 * z) * (z - 1))) == x11) & (x11 == Σ{0 ≤ y < z}(((z - y) + (2 * y)) + (z - y))) & (x12 == Σ{0 ≤ y < z}(((z - y) + (2 * y)) + (z - y)))",
-      "∀z:I . z -> z",
-      "∀z:I . z -> z")
-
+//      "∀z:I . z -> z",
+      "∀z:I . z -> z | (x7 == (2 * z)) & (((-1 * z) + x8) == x10) & (x5 == (2 * (z * z))) & (x12 == (2 * (z * z))) & (x3 == (2 * z)) & (x10 == z) & (x11 == (2 * (z * z))) & (x4 == (2 * z)) & ((((-2 * (z * z)) + z) + x6) == x10) & ((((-2 * (z * z)) + (2 * z)) + x2) == x4) & (x14 == (2 * z)) & (x1 == (2 * (z * z))) & ((((-1 * x10) + z) + x13) == x4)",
+      "© 0 -> 0")
 
     testTypeError(lam(x,lam(x,"fifo"^(x+y))))   // var x is not fresh
     testTypeError(lam(x,lam(y,"fifo"^(x+z))))   // var z not found
@@ -159,11 +167,15 @@ class TestTypeCheck {
     println(" - type(pre-subst): "+Show(oldtyp))
     println(" - simplified cnst: "+Show(Simplify(oldtyp.const)))
     // 2 - unify constraints and get a substitution
-    val (subst,rest) = Unify.getUnification(oldtyp.const)
-    println(" [ subst:  "+subst+" ]")
-    println(" [ rest:   "+Show(rest)+" ]")
+    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+    println(" - [ subst:  "+subst+" ]")
+    println(" - [ rest:   "+Show(rest)+" ]")
     // 3 - apply substitution to the type
-    val typ = subst(oldtyp)
+    val tmptyp = subst(oldtyp)
+//    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,oldtyp.const,tmptyp.isGeneral)
+    // 3.1 - recall constraints concerning bounded variables
+    val newrest = subst.getConstBoundedVars(oldtyp)
+    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
     println(" - type(pos-subst): "+Show(typ))
     // 4 - evaluate (simplify) resulting type (eval also in some parts of the typecheck).
     val typev = Simplify(typ)
@@ -172,9 +184,12 @@ class TestTypeCheck {
     //    val newsubst = Solver.solve(typev.const)
     val newsubst = Solver.solve(typev)
     if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    println(" [ subst2: "+newsubst+" ]")
+    if (newrest != BVal(true)) newsubst.get.setConcrete()
+    println(" - [ subst2: "+newsubst+" ]")
     // 6 - apply the new substitution to the previous type and eval
-    val typev2 = Eval(newsubst.get(typev))
+//    val tmptypev2 = Eval(newsubst.get(typev))
+//    val typev2 = Type(Arguments,tmptypev2.i,tmptypev2.j,tmptyp.const,tmptypev2.isGeneral)
+    val typev2 = Eval(newsubst.get(typev)) // TODO: maybe - define "instantiate" to make parameters concrete
     println(" - type(pos-solv) : "+Show(typev2))
     // print and check
     // println(" - rest(eval-alws): "+show(rest))
@@ -188,7 +203,7 @@ class TestTypeCheck {
   
   private def testTypeError(c:Connector) = try {
     val oldtyp = TypeCheck.check(c)
-    val (subst,rest) = Unify.getUnification(oldtyp.const)
+    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
     val _ = Solver.solve(Simplify(subst(oldtyp)).const)
     throw new RuntimeException("Type error not found in " + Show(c) + " : " + oldtyp)
   }
