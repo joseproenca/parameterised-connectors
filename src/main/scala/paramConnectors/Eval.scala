@@ -56,9 +56,12 @@ object Eval {
         val ev = apply(newe)
 //        println(" ## eval of "+PrettyPrint.show(e))
 //        println(s" ## sum from $a to $b")
-        for(y <- a until b)
-          res += Substitution(x , IVal(y))(ev)
-//        println(" ## got new res (before simpl): "+PrettyPrint.show(res))
+        if (b > a)
+          for(y <- a until b)
+            res += Substitution(x , IVal(y))(ev)
+        else // consistent with the simplification of integrals
+          for(y <- a until b by -1)
+            res += Substitution(x , IVal(-y))(ev)
         apply(res) // e(a) + ... + e(b)
       case (ev1,ev2) => Sum(x,apply(from),apply(to),apply(newe))
     }
@@ -116,17 +119,36 @@ object Eval {
   /**
    * Evaluates a type by performing operations over known values
    * @param t type being evaluated
-   * @return
+   * @return type after evaluation
    */
   def apply(t:Type): Type =
     Type(t.args,apply(t.i),apply(t.j),apply(t.const),t.isGeneral)
 
+  /**
+   * Creates an instance of a type by using the constraint solver
+   * and by adding default values of still undefined arguments.
+   * @param t type to be instantiated
+   * @return instance of the type t
+   */
   def instantiate(t:Type): Type = {
     val s = Solver.solve(t.const)
     if (s.isEmpty)
       throw new TypeCheckException("no solutions found for "+Show(t.const))
-    var subst = s.get
-    for (v <- t.args.vars) {
+    val subst = expandSubstitution(t.args,s.get)
+    val unchanged = (t.i == subst(t.i)) && (t.j == subst(t.j))
+    apply(subst(Type(Arguments(),t.i,t.j,t.const,t.isGeneral && unchanged)))
+  }
+
+  /**
+   * Adds default values to arguments (vars) to a substitution
+   * that may already define some of these arguments.
+   * @param args variables that will be (partially) added to the substitution
+   * @param s original substitution
+   * @return new (extended) substitution
+   */
+  def expandSubstitution(args:Arguments,s:Substitution): Substitution = {
+    var subst = s
+    for (v <- args.vars) {
       v match {
         case x@IVar(_) =>
           if (subst(x) == x) subst += (x,IVal(1))
@@ -134,14 +156,8 @@ object Eval {
           if (subst(x) == x) subst += (x,BVal(true))
       }
     }
-    val unchanged = (t.i == subst(t.i)) && (t.j == subst(t.j))
-    apply(subst(Type(Arguments(),t.i,t.j,t.const,t.isGeneral && unchanged)))
+    subst
   }
-
-//  def instantiate(t:Type): Type = {
-//    val fv = Solver.freeVars(t.i)
-//    val fvj = Solver.freeVars(t.j)
-//  }
 
 
 }

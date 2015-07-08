@@ -171,6 +171,7 @@ class TestTypeCheck {
     testTypeError(lam(x,lam(y,"fifo"^(x+z))))   // var z not found
     testTypeError(Tr(2,("fifo"^3) & (id * (id^3)))) // unification fails (clearly false after eval)
     testTypeError(lam(x,id^x) & lam(x,"fifo"^x))   // arguments not disjoint
+    testTypeError( lam(x,Tr(x,id^3))(4))        // type would have a negative interface (variable)
 //    testTypeError(zip)       // constraints with a sum until "x" - no variables are supported here.
 //    testTypeError(unzip)     // constraints with a sum until "x" - no variables are supported here.
 //    testTypeError(sequencer) // constraints with a sum until "z" - no variables are supported here.

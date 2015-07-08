@@ -159,6 +159,9 @@ object Solver extends App {
     VariableFactory.bounded("__"+(seed-1),from,to,solver)
   }
 
+//  // get a non-negative choco variable
+//  private def genFreshPosIVar(): IntVar = genFreshIVar(MIN_INT,MAX_INT)
+
   // get a choco variable for a user-defined variable
   private def getIVar(v:String): IntVar = {
     if (intVars contains v) intVars(v)

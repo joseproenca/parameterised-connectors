@@ -45,6 +45,10 @@ object Unify {
   }
 
   private def substVar(x:IVar,e:IExpr,exps:List[BExpr],rest:BExpr,bounded:List[Var]): (Substitution,BExpr) = {
+    e match {
+      case IVal(n) if (n<0) => throw new TypeCheckException(s"Variable $x cannot take the negative value $n.")
+      case _ => {}
+    }
     val s = Substitution(x , e)
     var (news,newrest) = getUnification( Simplify(s(And(exps))),rest,bounded)
 //    println(s"### checking if ${Show(x)} == ${Show(e)} has vars in $bounded.")

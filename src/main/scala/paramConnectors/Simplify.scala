@@ -119,7 +119,7 @@ object Simplify {
     case Not(e1) => Not(simpAux(e1))
     case EQ(e1, e2) => //EQ(apply(Sub(e1,e2)),IVal(0))
       val eq = iexpr2lits(Eval(Sub(e1,e2)))
-      optimiseSums(eq)
+      optimiseEq(eq)
 //      if (eq.lits.map contains Bag())
 //        // place the coefficient with no variable on the right of "=="
 //        EQ( lits2IExpr(OptLits(Lits(eq.lits.map - Bag()),eq.rest)) , IVal(eq.lits.map(Bag())) )
@@ -130,7 +130,9 @@ object Simplify {
     case LT(e1, e2) => LT(apply(e1),apply(e2))
   }
 
-  private def optimiseSums(optLits: OptLits): BExpr = {
+  private def optimiseEq(optLits: OptLits): BExpr = {
+    // rewrite sums with degree 1 (e.g., Sum_{x in ...} (2x + 3y^2 + 4))
+    // by multiplying the average by the number occurrences.
     for (r <- optLits.rest) r match {
       case Sum(x,from,to,e) =>
         val simpE    = iexpr2lits(Eval(e))
@@ -165,7 +167,8 @@ object Simplify {
     }
     // hack to prioritise replacing temporary variables (x[0-9]+)
     var todo: Option[BExpr] = None
-    for ((v,c) <- optLits.lits.map) { // TODO: improve by checking if variable only appears once before moving
+    for ((v,c) <- optLits.lits.map) {
+      // TODO: improve by checking if variable only appears once before moving
       if ((c/gcdc) == -1 && v.size == 1) {
         val res = EQ(lits2IExpr(OptLits(Lits(optLits.lits.map.mapValues(_ / gcdc) - v), optLits.rest)), IVar(v.head))
 //        println(s"#### checking if ${v.head} is a temp variable.")

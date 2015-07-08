@@ -83,7 +83,7 @@ object DSL {
    * @param c connector to be type-checked
    * @return a substitution used applied to the derivation tree to get an instance of a type
    */
-  def typeSubstInstance(c:Connector): Substitution = {
+  def typeSubstitution(c:Connector): Substitution = {
     // 1 - build derivation tree
     val oldtyp = TypeCheck.check(c)
     // 2 - unify constraints and get a substitution
@@ -96,11 +96,20 @@ object DSL {
     val typev = Simplify(typ)
     // 5 - solve rest of the constraints
     //val newsubst = Solver.solve(typev.const)
-    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
-    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    if (newrest != BVal(true)) newsubst.get.setConcrete()
-    // 6 - apply the new substitution to the previous type and eval
-    subst ++ newsubst.get
+//    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+//    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
+//    if (newrest != BVal(true)) newsubst.get.setConcrete()
+//    // 6 - apply the new substitution to the previous type and eval
+//    subst ++ newsubst.get
+
+    val s = Solver.solve(typev.const)
+    if (s.isEmpty)
+      throw new TypeCheckException("Solver failed: no solutions found for "+Show(typev.const))
+    val moreSubst = Eval.expandSubstitution(typev.args,s.get)
+    val unchanged = (typev.i == moreSubst(typev.i)) && (typev.j == moreSubst(typev.j))
+//    println(s"type unchanged ${Show(typev)} with $s")
+    if (!(typev.isGeneral && unchanged)) moreSubst.setConcrete()
+    subst ++ moreSubst
   }
 
   /**
