@@ -45,7 +45,10 @@ object TypeCheck {
     def size = ints.size + bools.size
 
     override def toString =
-      "[-"+bools.map(_+":Bool").mkString(",") + ints.map(","+_+":Int").mkString("")+"-]"
+      "["+bools.map(_+":Bool").mkString(",") +
+        (if (bools.nonEmpty) ",") +
+         ints.map(_+":Int").mkString(",") +
+      "]"
   }
 
 
@@ -60,6 +63,13 @@ object TypeCheck {
     seed = 0
     check(new Context,con)
   }
+
+  private def nonZero(e:IExpr): BExpr = e >= IVal(0)
+  private def nonZero(i:Interface): BExpr = nonZero(interfaceSem(i))
+  private def nonZero(i1:Interface,i2:Interface): BExpr =
+    nonZero(i1) & nonZero(i2)
+  private def nonZero(e1:IExpr,e2:IExpr): BExpr =
+    nonZero(e1) & nonZero(e2)
 
   private def check(gamma:Context, con:Connector): Type = con match {
     case Seq(c1, c2) =>
@@ -85,11 +95,14 @@ object TypeCheck {
       val y = Port(IVar(fresh())) // gen unique name
       Type(args, x, y, EQ(interfaceSem(x * i), interfaceSem(i1)) &
                        EQ(interfaceSem(y * i), interfaceSem(j1)) &
+                       nonZero(x,y) &
 //                       GT(interfaceSem(x * i), IVal(-1)) &
 //                       GT(interfaceSem(y * i), IVal(-1)) &
                        phi, isG)
     case Prim(name,i,j) =>
-      Type(Arguments(), i, j, BVal(b=true), isGeneral=true)
+      check(gamma,Utils.interfaceSem(i))
+      check(gamma,Utils.interfaceSem(j))
+      Type(Arguments(), i, j, nonZero(i,j), isGeneral=true)
     // TODO:? c^a imposes a>=0
     case Exp(a, c) =>
       check(gamma,a)
@@ -104,7 +117,7 @@ object TypeCheck {
       val cj = Sum(x,IVal(0),a,interfaceSem(Eval(j)))
       val newi = IVar(fresh()) // gen unique name
       val newj = IVar(fresh()) // gen unique name
-      Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & phi,isG)
+      Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & nonZero(newi,newj) & phi,isG)
     // END OF TRICKY CASE
     case Choice(b, c1, c2) =>
       val Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
@@ -158,6 +171,8 @@ object TypeCheck {
     case EQ(e1, e2)  => check(gamma,e1); check(gamma,e2)
     case GT(e1, e2)  => check(gamma,e1); check(gamma,e2)
     case LT(e1, e2)  => check(gamma,e1); check(gamma,e2)
+    case GE(e1, e2)  => check(gamma,e1); check(gamma,e2)
+    case LE(e1, e2)  => check(gamma,e1); check(gamma,e2)
     case And(Nil)    =>
     case And(e::es)  => check(gamma,e); check(gamma,And(es))
     case Or(e1, e2)  => check(gamma,e1); check(gamma,e2)

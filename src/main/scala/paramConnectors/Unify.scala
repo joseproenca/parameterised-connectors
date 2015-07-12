@@ -35,6 +35,8 @@ object Unify {
     case And((or@Or(_,_))::exps) => getUnification(And(exps),rest & or,bounded)
     case And((gt@GT(_,_))::exps) => getUnification(And(exps),rest & gt,bounded)
     case And((lt@LT(_,_))::exps) => getUnification(And(exps),rest & lt,bounded)
+    case And((ge@GE(_,_))::exps) => getUnification(And(exps),rest & ge,bounded)
+    case And((le@LE(_,_))::exps) => getUnification(And(exps),rest & le,bounded)
     case And((nt@Not(_))::exps)  => getUnification(And(exps),rest & nt,bounded)
     //
     case And(And(e1)::exps) => getUnification(And(e1:::exps),rest,bounded)

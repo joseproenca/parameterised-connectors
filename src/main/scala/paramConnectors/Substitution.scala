@@ -104,6 +104,8 @@ class Substitution(private val items:List[Item]) {
     case EQ(e1, e2)  => EQ(subst(i,e1),subst(i,e2))
     case GT(e1, e2)  => GT(subst(i,e1),subst(i,e2))
     case LT(e1, e2)  => LT(subst(i,e1),subst(i,e2))
+    case GE(e1, e2)  => GE(subst(i,e1),subst(i,e2))
+    case LE(e1, e2)  => LE(subst(i,e1),subst(i,e2))
     case And(es)     => And(es.map(subst(i,_)))
     case Or(e1, e2)  => Or(subst(i,e1),subst(i,e2))
     case Not(e1)     => Not(subst(i,e1))

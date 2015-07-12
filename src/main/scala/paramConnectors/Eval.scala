@@ -97,6 +97,16 @@ object Eval {
       case (a,b) if a == b => BVal(b=false)
       case (a,b) => LT(a,b)
     }
+    case GE(e1, e2) => (apply(e1),apply(e2)) match {
+      case (IVal(i1),IVal(i2)) => BVal(i1 >= i2)
+      case (a,b) if a == b => BVal(b=true)
+      case (a,b) => GE(a,b)
+    }
+    case LE(e1, e2) => (apply(e1),apply(e2)) match {
+      case (IVal(i1),IVal(i2)) => BVal(i1 <= i2)
+      case (a,b) if a == b => BVal(b=true)
+      case (a,b) => LE(a,b)
+    }
     case And(Nil) => e
     case And(e1::es) => (apply(e1),apply(And(es))) match {
       case (BVal(true),ev) => ev

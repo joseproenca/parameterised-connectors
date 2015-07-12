@@ -24,6 +24,8 @@ object Utils {
     case EQ(e1, e2) => isFree(x,e1) && isFree(x,e2)
     case GT(e1, e2) => isFree(x,e1) && isFree(x,e2)
     case LT(e1, e2) => isFree(x,e1) && isFree(x,e2)
+    case GE(e1, e2) => isFree(x,e1) && isFree(x,e2)
+    case LE(e1, e2) => isFree(x,e1) && isFree(x,e2)
     case And(Nil) => true
     case And(e2::es) => isFree(x,e2) && isFree(x,And(es))
     case Or(e1, e2) => isFree(x,e1) && isFree(x,e2)
@@ -54,6 +56,8 @@ object Utils {
     case EQ(e1, e2) => freeVars(e1) ++ freeVars(e2)
     case GT(e1, e2) => freeVars(e1) ++ freeVars(e2)
     case LT(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case GE(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case LE(e1, e2) => freeVars(e1) ++ freeVars(e2)
     case And(Nil) => Set()
     case And(e1::es) => freeVars(e1) ++ freeVars(And(es))
     case Or(e1, e2) => freeVars(e1) ++ freeVars(e2)

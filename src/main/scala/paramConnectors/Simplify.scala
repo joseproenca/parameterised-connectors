@@ -128,6 +128,8 @@ object Simplify {
 //        EQ( lits2IExpr(OptLits(Lits(eq.lits.map        ),eq.rest)) , IVal(0) )
     case GT(e1, e2) => GT(apply(e1),apply(e2))
     case LT(e1, e2) => LT(apply(e1),apply(e2))
+    case GE(e1, e2) => GE(apply(e1),apply(e2))
+    case LE(e1, e2) => LE(apply(e1),apply(e2))
   }
 
   private def optimiseEq(optLits: OptLits): BExpr = {

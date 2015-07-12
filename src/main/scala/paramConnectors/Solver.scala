@@ -268,19 +268,32 @@ object Solver extends App {
     case And(e::es) => and(bexpr2choco(e),bexpr2choco(And(es)))
     case Or(e1, e2) => or(bexpr2choco(e1),bexpr2choco(e2))
     case Not(e1) => not(bexpr2choco(e1))
-    case EQ(IVal(i1), IVal(i2)) => if (i1==i2) TRUE(solver) else FALSE(solver)
-    case EQ(IVar(x), IVal(i)) => arithm(getIVar(x),"=",i)
-    case EQ(IVal(i), exp) => arithm(getIVar(exp),"=",i)
-    case EQ(exp1, exp2) => arithm(getIVar(exp1),"=",getIVar(exp2))
-    case GT(IVal(i1), IVal(i2)) => if (i1>i2) TRUE(solver) else FALSE(solver)
-    case GT(IVar(x), IVal(i)) => arithm(getIVar(x),">",i)
-    case GT(IVal(i), exp) => arithm(getIVar(exp),"<",i)
-    case GT(exp1, exp2) => arithm(getIVar(exp1),">",getIVar(exp2))
-    case LT(IVal(i1), IVal(i2)) => if (i1<i2) TRUE(solver) else FALSE(solver)
-    case LT(IVar(x), IVal(i)) => arithm(getIVar(x),"<",i)
-    case LT(IVal(i), exp) => arithm(getIVar(exp),">",i)
-    case LT(exp1, exp2) => arithm(getIVar(exp1),"<",getIVar(exp2))
+    case EQ(e1,e2) => comp(e1,e2,"=","=",_==_)
+    case GT(e1,e2) => comp(e1,e2,">","<",_>_)
+    case LT(e1,e2) => comp(e1,e2,"<",">",_<_)
+    case GE(e1,e2) => comp(e1,e2,">=","<=",_>=_)
+    case LE(e1,e2) => comp(e1,e2,"<=",">=",_<=_)
+//    case EQ(IVal(i1), IVal(i2)) => if (i1==i2) TRUE(solver) else FALSE(solver)
+//    case EQ(IVar(x), IVal(i)) => arithm(getIVar(x),"=",i)
+//    case EQ(IVal(i), exp) => arithm(getIVar(exp),"=",i)
+//    case EQ(exp1, exp2) => arithm(getIVar(exp1),"=",getIVar(exp2))
+//    case GT(IVal(i1), IVal(i2)) => if (i1>i2) TRUE(solver) else FALSE(solver)
+//    case GT(IVar(x), IVal(i)) => arithm(getIVar(x),">",i)
+//    case GT(IVal(i), exp) => arithm(getIVar(exp),"<",i)
+//    case GT(exp1, exp2) => arithm(getIVar(exp1),">",getIVar(exp2))
+//    case LT(IVal(i1), IVal(i2)) => if (i1<i2) TRUE(solver) else FALSE(solver)
+//    case LT(IVar(x), IVal(i)) => arithm(getIVar(x),"<",i)
+//    case LT(IVal(i), exp) => arithm(getIVar(exp),">",i)
+//    case LT(exp1, exp2) => arithm(getIVar(exp1),"<",getIVar(exp2))
   }
+
+  private def comp(e1:IExpr,e2:IExpr,op:String,revop:String,test:(Int,Int)=>Boolean): Constraint =
+    (e1,e2) match {
+      case (IVal(i1), IVal(i2)) => if (test(i1,i2)) TRUE(solver) else FALSE(solver)
+      case (IVar(x), IVal(i)) => arithm(getIVar(x),op,i)
+      case (IVal(i), exp) => arithm(getIVar(exp),revop,i)
+      case (exp1, exp2) => arithm(getIVar(exp1),op,getIVar(exp2))
+    }
 
 
 

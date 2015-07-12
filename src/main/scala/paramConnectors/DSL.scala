@@ -41,13 +41,21 @@ object DSL {
    * @return the (general) type of the connector - if constraint solving gives a concrete type, return the general type instead.
    */
   def typeOf(c:Connector): Type = {
-    // 1 - type check until the unification phase
-    val typev = typeUnify(c)
-    // 2 - solve rest of the constraints
-    //val newsubst = Solver.solve(typev.const)
-    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+    // 1 - build derivation tree
+    val oldtyp = TypeCheck.check(c)
+    // 2 - unify constraints and get a substitution
+    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+    // 3 - apply substitution to the type
+    val tmptyp = subst(oldtyp)
+    val newrest = subst.getConstBoundedVars(oldtyp)
+    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
+    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
+    val typev = Simplify(typ)
+    // 5 - solve rest of the constraints
+    val newsubst = Solver.solve(typev)
     if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    // 3 - apply the new substitution to the previous type and eval
+    if (newrest != BVal(true)) newsubst.get.setConcrete()
+    // 6 - apply the new substitution to the previous type and eval
     val concr = Eval(newsubst.get(typev))
     if (concr.isGeneral) concr
     else typev

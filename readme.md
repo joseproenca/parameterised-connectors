@@ -54,24 +54,28 @@ typeTree( lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
 // returns ∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1))
 //                         & ((x2 + (x - 1)) == x)
 //                         & ((1 + (x - 1)) == x)
+//                         & (x1 >= 0) & (x2 >= 0)
 
 typeOf(   lam(n, id^x ^ x<--n) )
 // returns ∀n:I . x1 -> x2 | (n == ((n * n) + (-2 * x1)))
 //                         & (n == ((n * n) + (-2 * x2)))
+//                         & (x1 >= 0) & (x2 >= 0)
 typeTree( lam(n, id^x ^ x<--n) )
 // returns ∀n:I . x1 -> x2 | (x1 == Σ{0 ≤ x < n}x) & (x2 == Σ{0 ≤ x < n}x)
+/                          & (x1 >= 0) & (x2 >= 0)
 typeInstance(lam(n, id^x ^ x<--n) )
 // returns © 0 -> 0
 
 typeOf(   lam(n, id^x ^ x<--n)(3) )
 // returns 3 -> 3
 typeTree( lam(n, id^x ^ x<--n)(3) )
-// returns x1 -> x2 | (x1 == 3) & (x2 == 3)
+// returns x1 -> x2 | (x1 == 3) & (x2 == 3) & (x1 >= 0) & (x2 >= 0)
 
 typeOf( lam(x,Tr(x,id^3)) )
-// returns ∀x:I . (-1 * x) + 3 -> 3 + (-1 * x)
+// returns ∀x:I . (-1 * x) + 3 -> 3 + (-1 * x) | (((-1 * x) + 3) >= 0)
+//                                             & ((3 + (-1 * x)) >= 0)
 typeInstance( lam(x,Tr(x,id^3)) )
-// returns © 0 -> 0
+// returns © 2 -> 2
 ```
 
 Even more examples can be found in our [test suite](https://github.com/joseproenca/parameterised-connectors/blob/master/src/test/scala/paramConnectors/TestTypeCheck.scala).
