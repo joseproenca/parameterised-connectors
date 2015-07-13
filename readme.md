@@ -75,7 +75,7 @@ typeOf( lam(x,Tr(x,id^3)) )
 // returns ∀x:I . (-1 * x) + 3 -> 3 + (-1 * x) | (((-1 * x) + 3) >= 0)
 //                                             & ((3 + (-1 * x)) >= 0)
 typeInstance( lam(x,Tr(x,id^3)) )
-// returns © 2 -> 2
+// returns © 0 -> 0
 ```
 
 Even more examples can be found in our [test suite](https://github.com/joseproenca/parameterised-connectors/blob/master/src/test/scala/paramConnectors/TestTypeCheck.scala).

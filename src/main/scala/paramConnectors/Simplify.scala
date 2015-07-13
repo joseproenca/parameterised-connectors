@@ -104,14 +104,14 @@ object Simplify {
    * @return simplified type
    */
   def apply(t:Type): Type = {
-    Type(t.args, apply(t.i), apply(t.j), apply(t.const), t.isGeneral)
+    Type(t.args, apply(t.i), apply(t.j), dropArgs(t.args,apply(t.const)), t.isGeneral)
   }
 
   def apply(itf:Interface): Interface =
     Port(apply(Utils.interfaceSem(itf)))
 
 
-  def simpAux(e:BExpr): BExpr = e match {
+  private def simpAux(e:BExpr): BExpr = e match {
     case BVal(b) => e
     case BVar(x) => e
     case And(es) => And(es.map(simpAux))
@@ -126,10 +126,26 @@ object Simplify {
 //      else
 //      // place a "0" on the right of "=="
 //        EQ( lits2IExpr(OptLits(Lits(eq.lits.map        ),eq.rest)) , IVal(0) )
-    case GT(e1, e2) => GT(apply(e1),apply(e2))
-    case LT(e1, e2) => LT(apply(e1),apply(e2))
-    case GE(e1, e2) => GE(apply(e1),apply(e2))
-    case LE(e1, e2) => LE(apply(e1),apply(e2))
+    case GT(e1, e2) => optimiseIneq(e1,e2,GT) //GT(apply(e1),apply(e2))
+    case LT(e1, e2) => optimiseIneq(e1,e2,LT) //LT(apply(e1),apply(e2))
+    case GE(e1, e2) => optimiseIneq(e1,e2,GE) //GE(apply(e1),apply(e2))
+    case LE(e1, e2) => optimiseIneq(e1,e2,LE) //LE(apply(e1),apply(e2))
+  }
+
+  private def optimiseIneq(e1:IExpr,e2:IExpr,const:(IExpr,IExpr)=>BExpr): BExpr = {
+    (apply(e1),apply(e2)) match {
+      case (IVal(0),e3@Mul(_,_)) => const(IVal(0),reduceZ(e3))
+      case (e3@Mul(_,_),IVal(0)) => const(reduceZ(e3),IVal(0))
+      case (e3,e4) => const(e3,e4)
+    }
+  }
+  private def reduceZ(e:IExpr): IExpr = e match {
+    case Mul(IVal(i),e2) if i>0 => reduceZ(e2)
+    case Mul(IVar(v1),IVar(v2)) if v1 == v2 => IVar(v1)
+    case Mul(IVar(v1),e2@Mul(IVar(v2),e3)) =>
+      if (v1==v2) reduceZ(e2)
+      else Mul(IVar(v1),reduceZ(e2))
+    case _ => e
   }
 
   private def optimiseEq(optLits: OptLits): BExpr = {
@@ -188,7 +204,7 @@ object Simplify {
     }
     // if no variable with -1 or 1 coefficient outside "tempArgs" was found, try within args
     if (todo.isDefined)
-      return todo.get
+      todo.get
     // no variable with "-1" or "1" coefficient found - try to put a number (with no variables)
     else if (optLits.lits.map contains Bag())
     // place the coefficient with no variable on the right of "=="
@@ -198,6 +214,15 @@ object Simplify {
       EQ( lits2IExpr(OptLits(Lits(optLits.lits.map        ),optLits.rest)) , IVal(0) )
   }
 
+  private def dropArgs(args: Arguments,bExpr: BExpr): BExpr = bExpr match {
+    case GE(x@IVar(_),IVal(i)) if (i <= 0) && (args.vars contains x) => BVal(true)
+    case GT(x@IVar(_),IVal(i)) if (i <  0) && (args.vars contains x) => BVal(true)
+    case LE(IVal(i),x@IVar(_)) if (i <= 0) && (args.vars contains x) => BVal(true)
+    case LT(IVal(i),x@IVar(_)) if (i <  0) && (args.vars contains x) => BVal(true)
+    case And(l) => And(l.map(dropArgs(args,_)).filterNot(_==BVal(true)))
+    case Or(e1,e2) => Eval(Or(dropArgs(args,e1),dropArgs(args,e2)))
+    case _ => bExpr
+  }
   ////
 
   private def isTemp(x:String) =  x.matches("x[0-9]+")

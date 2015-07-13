@@ -44,8 +44,8 @@ sealed abstract class BExpr extends Expr {
     case (BVal(true),_) => that
     case(_,BVal(true)) => this
     case (And(e1),And(e2)) => And(e1:::e2)
-    case (And(es),_) => And(es:::List(that))
-    case (_,And(es)) => And(this::es)
+    case (And(es),_) => if (es contains that) this else And(es:::List(that)) // naive avoidance of repetitions
+    case (_,And(es)) => if (es contains this) that else And(this::es)        // naive avoidance of repetitions
     case _ => And(List(this,that))
   }
   def ===(that:BExpr) =
