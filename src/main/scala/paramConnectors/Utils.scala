@@ -78,4 +78,16 @@ object Utils {
     case Cond(b, i1, i2) => ITE(b,interfaceSem(i1),interfaceSem(i2))
   }
 
+  /**
+   * checks if a string matches the pattern of a generated variable
+   */
+  def isGenVar(x:String) =
+    x.matches("x[0-9]+")
+  /**
+   * checks if a string matches the pattern of a variable renamed for alpha equivalence
+   */
+  def isAlphaEquivVar(x:String) =
+    x.matches(".*![0-9]+$")
+  //{println(s"isTemp $x - ${x.matches("x[0-9]+")}") ; x.matches("x[0-9]+")}
+
 }

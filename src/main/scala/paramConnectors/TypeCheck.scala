@@ -28,18 +28,22 @@ object TypeCheck {
     def disjoint(other:Context) =
       (ints  & other.ints)  == Set() &
       (bools & other.bools) == Set()
-    def ++(other:Context): Context =
-      if (disjoint(other)) build(ints++other.ints, bools++other.bools)
-        else throw new TypeCheckException(s"Non-disjoint contexts:\n - $this\n and\n - $other")
+//    def ++(other:Context): Context =
+//      if (disjoint(other)) build(ints++other.ints, bools++other.bools)
+//        else throw new TypeCheckException(s"Non-disjoint contexts:\n - $this\n and\n - $other")
     def addInt(v:String): Context =
       if (!ints(v)) build(ints+v,bools)
-      else throw new TypeCheckException(s"Context already contains int variable $v (vars: $ints)")
+      else throw new TypeCheckException(s"Context already contains int variable $v (vars: $ints)") // should never happen
     def addBool(v:String): Context =
       if (!bools(v)) build(ints,bools+v)
-      else throw new TypeCheckException(s"Context already contains bool variable $v (vars: $bools)")
+      else throw new TypeCheckException(s"Context already contains bool variable $v (vars: $bools)") // should never happen
 
-    def addInt(v:IVar): Context = addInt(v.x)
-    def addBool(v:BVar): Context = addBool(v.x)
+//    def addVar(v:IVar): Context = addInt(v.x)
+//    def addVar(v:BVar): Context = addBool(v.x)
+    def addVar(v:Var): Context = v match {
+      case x@IVar(_) => addInt(v.x)
+      case x@BVar(_) => addBool(v.x)
+    }
 
     /** Number of variables. */
     def size = ints.size + bools.size
@@ -54,6 +58,7 @@ object TypeCheck {
 
   private var seed = 0
   private def fresh() = {seed += 1; "x"+seed}
+  private def fresh(base:Var) = {seed += 1; base.x+"!"+seed}
 
   /**
    * Finds a type (and constraints) by building a type derivation tree.
@@ -73,22 +78,21 @@ object TypeCheck {
 
   private def check(gamma:Context, con:Connector): Type = con match {
     case Seq(c1, c2) =>
-      val Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
-      val Type(args2,i2,j2,phi2,isG2) = check(gamma,c2)
-      if (!(args1 disjoint args2))
-        throw new TypeCheckException(s"arguments of ${Show(c1)} and ${Show(c2)} are not disjoint.")
+      val t1@Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
+      val Type(args2,i2,j2,phi2,isG2) = alphaEquiv(t1,check(gamma,c2))
+//      if (!(args1 disjoint args2))
+//        throw new TypeCheckException(s"arguments of ${Show(c1)} and ${Show(c2)} are not disjoint.")
       Type(args1 ++ args2, i1, j2, EQ(interfaceSem(j1),interfaceSem(i2)) & phi1 & phi2, isG1 && isG2)
     case Par(c1, c2) =>
-      val Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
-      val Type(args2,i2,j2,phi2,isG2) = check(gamma,c2)
-      if (!(args1 disjoint args2))
-        throw new TypeCheckException(s"arguments of ${Show(c1)} and ${Show(c2)} are not disjoint.")
+      val t1@Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
+      val Type(args2,i2,j2,phi2,isG2) = alphaEquiv(t1,check(gamma,c2))
+//      if (!(args1 disjoint args2))
+//        throw new TypeCheckException(s"arguments of ${Show(c1)} and ${Show(c2)} are not disjoint.")
       Type(args1 ++ args2, i1 * i2, j1 * j2, phi1 & phi2, isG1 && isG2)
     case Id(i:Interface) =>
       Type(Arguments(), i, i, BVal(b=true))
     case Symmetry(i, j) =>
       Type(Arguments(), i*j, j*i, BVal(b=true))
-    // TODO:? Trace imposes x+i>0 and y+i>0
     case Trace(i, c) =>
       val Type(args,i1,j1,phi,isG) = check(gamma,c)
       val x = Port(IVar(fresh())) // gen unique name
@@ -96,8 +100,6 @@ object TypeCheck {
       Type(args, x, y, EQ(interfaceSem(x * i), interfaceSem(i1)) &
                        EQ(interfaceSem(y * i), interfaceSem(j1)) &
                        nonZero(x,y) &
-//                       GT(interfaceSem(x * i), IVal(-1)) &
-//                       GT(interfaceSem(y * i), IVal(-1)) &
                        phi, isG)
     case Prim(name,i,j) =>
       check(gamma,Utils.interfaceSem(i))
@@ -112,9 +114,9 @@ object TypeCheck {
     // TODO:? c^(x<a) imposes a>=0
     case ExpX(x, a, c) =>
       check(gamma,a)
-      val Type(args,i,j,phi,isG) = check(gamma.addInt(x),c)
-      val ci = Sum(x,IVal(0),a,interfaceSem(Eval(i))) // 0<=x<a
-      val cj = Sum(x,IVal(0),a,interfaceSem(Eval(j)))
+      val (Type(args,i,j,phi,isG),newx) = checkAndAddVar(gamma,x,c) //check(gamma.addVar(x),c)
+      val ci = Sum(newx.asInstanceOf[IVar],IVal(0),a,interfaceSem(Eval(i))) // 0<=x<a
+      val cj = Sum(newx.asInstanceOf[IVar],IVal(0),a,interfaceSem(Eval(j)))
       val newi = IVar(fresh()) // gen unique name
       val newj = IVar(fresh()) // gen unique name
       Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & nonZero(newi,newj) & phi,isG)
@@ -125,11 +127,11 @@ object TypeCheck {
       check(gamma,b)
       Type(args1++args2, Cond(b,i1,i2), Cond(b,j1,j2), phi1 & phi2,isG1 && isG2)
     case IAbs(x, c) =>
-      val Type(args,i,j,phi,isG) = check(gamma.addInt(x),c)
-      Type(args + x ,i,j,phi,isG)
+      val (Type(args,i,j,phi,isG),newx) = checkAndAddVar(gamma,x,c) //check(gamma.addVar(x),c)
+      Type(args + newx ,i,j,phi,isG)
     case BAbs(x, c) =>
-      val Type(args,i,j,phi,isG) = check(gamma.addBool(x),c)
-      Type(args + x ,i,j,phi,isG)
+      val (Type(args,i,j,phi,isG),newx) = checkAndAddVar(gamma,x,c) //check(gamma.addVar(x),c)
+      Type(args + newx ,i,j,phi,isG)
     case IApp(c, a) =>
       val Type(args,i,j,phi,isG) = check(gamma,c)
       args.vars.head match {
@@ -160,7 +162,7 @@ object TypeCheck {
     case Add(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Sub(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Mul(e1, e2) => check(gamma,e1); check(gamma,e2)
-    case Sum(x,from,to,e) => check(gamma,from) ; check(gamma,to) ; check(gamma.addInt(x),e)
+    case Sum(x,from,to,e) => check(gamma,from) ; check(gamma,to) ; checkAndAddVar(gamma,x,e) //check(gamma.addVar(x),e)
     case ITE(b,ift,iff)   => check(gamma,b) ; check(gamma,ift) ; check(gamma,iff)
   }
 
@@ -179,4 +181,38 @@ object TypeCheck {
     case Not(e1)     => check(gamma,e1)
   }
 
+
+  private def alphaEquiv(t1:Type,t2:Type): Type = {
+    val rep = t1.args.vars intersect t2.args.vars
+    var sub = Substitution()
+    for (x <- rep) x match {
+      case v@IVar(_) => sub += (v,IVar(fresh(x)))
+      case v@BVar(_) => sub += (v,BVar(fresh(x)))
+    }
+    sub.alphaEquiv(t2)
+  }
+
+  private def checkAndAddVar(gamma:Context,x:Var,c:Connector): (Type,Var) = {
+    if (gamma contains x.x) {
+      val y = fresh(x)
+      x match {
+        case v@IVar(_) => (check(gamma.addVar(IVar(y)),Substitution(v,IVar(y))(c)),IVar(y))
+        case v@BVar(_) => (check(gamma.addVar(BVar(y)),Substitution(v,BVar(y))(c)),BVar(y))
+      }
+    }
+    else
+      (check(gamma.addVar(x),c),x)
+  }
+  private def checkAndAddVar(gamma:Context,x:Var,e:IExpr): Unit = {
+    if (gamma contains x.x) {
+      val y = fresh(x)
+      x match {
+        case v@IVar(_) => check(gamma.addVar(IVar(y)),Substitution(v,IVar(y))(e))
+        case v@BVar(_) => check(gamma.addVar(BVar(y)),Substitution(v,BVar(y))(e))
+      }
+    }
+    else
+      check(gamma.addVar(x),e)
+
+  }
 }

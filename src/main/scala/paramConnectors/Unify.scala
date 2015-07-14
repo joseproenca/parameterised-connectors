@@ -26,6 +26,13 @@ object Unify {
       val (news,newrest) = getUnification(Simplify(s(And(exps))),rest,bounded)
       (news + (x,BVal(b=true)), newrest)
     case And(EQ(e1, e2)::exps) if e1 == e2 => getUnification(And(exps),rest,bounded)
+    case And(EQ(x@IVar(_), y@IVar(_))::exps) if x!=y =>
+      if (Utils.isGenVar(x.x))
+        substVar(x,y,exps,rest,bounded)
+      else if (Utils.isGenVar(y.x) || Utils.isAlphaEquivVar(y.x))
+        substVar(y,x,exps,rest,bounded)
+      else
+        substVar(x,y,exps,rest,bounded)
     case And(EQ(x@IVar(_), e2)::exps) if Utils.isFree(x,e2) =>
       substVar(x,e2,exps,rest,bounded)
     case And(EQ(e1,x@IVar(_))::exps) if Utils.isFree(x,e1) =>

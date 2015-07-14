@@ -65,32 +65,38 @@ class Substitution(private val items:List[Item]) {
       prev = subst(i,prev)
     prev
   }
+  def apply(con:Connector): Connector = {
+    var prev = con
+    for (i <- items)
+      prev = subst(i,prev)
+    prev
+  }
   def apply(typ:Type): Type = {
     var Type(args,i,j,const,genType) = typ
     for (it <- items) {
       val vars = args.vars
-      args = subst(it, args, vars) // select dummy subst (just returns args!) or smarter
+      args = subst(it, args, vars) // either "ID" (if general) or "constant args" (if concrete)
       i = subst(it, i)
       j = subst(it, j)
       const = subst(it, const)
     }
-    //TODO: later - add to constraints variables from args that are related to variables in interfaces
-//    // add constraints about variables in args and not in i nor j
-//    val fvi = Solver.freeVars(i)
-//    val fvj = Solver.freeVars(j)
-//    // need to collect relevant vars - also in items - item becomes constraint.
-//    // a var is relevant if it is in args (and in items), or if it is relevant
-//    for (it <- items) it match {
-//      case IItem(v, e) =>
-//        if ((args.vars contains v) && (fvi ...) )
-//      case BItem(v, e) =>
-//    }
-//    ////
+    Type(args,i,j,const,isGeneral = isGeneral && genType)
+  }
 
-    if (isGeneral)
-      Type(args,i,j,const,isGeneral = genType)
-    else
-      Type(args,i,j,const,isGeneral = false)
+  def alphaEquiv(t:Type) = {
+    var Type(args,i,j,const,genType) = t
+    var vars = args.vars
+    for (it <- items) {
+      it match {
+        case IItem(v, x@IVar(_)) => vars = vars.map{case `v` => x case y => y}
+        case BItem(v, x@BVar(_)) => vars = vars.map{case `v` => x case y => y}
+        case _ =>
+      }
+      i = subst(it, i)
+      j = subst(it, j)
+      const = subst(it, const)
+    }
+    Type(Arguments(vars),i,j,const,isGeneral = isGeneral && genType)
   }
 
   // substitution in boolean expressions
@@ -132,6 +138,32 @@ class Substitution(private val items:List[Item]) {
     case Port(a) => Port(subst(it,a))
     case Repl(i, a) => Repl(subst(it,i), subst(it,a))
     case Cond(b, i1, i2) => Cond(subst(it,b),subst(it,i1),subst(it,i2))
+  }
+  // substitution in connectors (of free vars)
+  private def subst(it:Item,con:Connector): Connector = con match {
+    case Seq(c1, c2) => Seq(subst(it,c1),subst(it,c2))
+    case Par(c1, c2) => Par(subst(it,c1),subst(it,c2))
+    case Id(i) => Id(subst(it,i))
+    case Symmetry(i, j) => Symmetry(subst(it,i),subst(it,j))
+    case Trace(i, c) => Trace(subst(it,i),subst(it,c))
+    case Prim(name, i, j) => Prim(name,subst(it,i),subst(it,j))
+    case Exp(a, c) =>  Exp(subst(it,a),subst(it,c))
+    case ExpX(x, a, c) => it match {
+      case IItem(`x`, e) => ExpX(x,subst(it,a),c)
+      case _ => ExpX(x,subst(it,a),subst(it,c))
+    }
+    case Choice(b, c1, c2) => Choice(subst(it,b),subst(it,c1),subst(it,c2))
+    case IAbs(x, c) => it match {
+      case IItem(`x`, e) => con
+      case _ => IAbs(x,subst(it,c))
+    }
+    case BAbs(x, c) => it match {
+      case BItem(`x`, e) => con
+      case _ => BAbs(x,subst(it,c))
+    }
+    case IApp(c, a) => IApp(subst(it,c),subst(it,a))
+    case BApp(c, b) => BApp(subst(it,c),subst(it,b))
+    case Restr(c, phi) => Restr(subst(it,c),subst(it,phi))
   }
   // substitution in arguments of a type. 3 possible versions
   // 1- this version ignores the replacing of variables, the commented one replaces and cleans up the argument list

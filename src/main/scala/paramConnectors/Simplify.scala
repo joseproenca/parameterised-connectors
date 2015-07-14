@@ -190,14 +190,14 @@ object Simplify {
       if ((c/gcdc) == -1 && v.size == 1) {
         val res = EQ(lits2IExpr(OptLits(Lits(optLits.lits.map.mapValues(_ / gcdc) - v), optLits.rest)), IVar(v.head))
 //        println(s"#### checking if ${v.head} is a temp variable.")
-        if (isTemp(v.head))
+        if (Utils.isGenVar(v.head))
           return res
         else todo = Some(res)
       }
       if ((c/gcdc) == 1 && v.size == 1) {
         val res = EQ( IVar(v.head), lits2IExpr(OptLits(Lits((optLits.lits.map - v).mapValues(-_/gcdc)),optLits.rest.map(Mul(_,IVal(-1))))))
 //        println(s"#### checking if ${v.head} is a temp variable.")
-        if (isTemp(v.head))
+        if (Utils.isGenVar(v.head))
           return res
         else todo = Some(res)
       }
@@ -225,7 +225,6 @@ object Simplify {
   }
   ////
 
-  private def isTemp(x:String) =  x.matches("x[0-9]+")
   private def join(l1:OptLits,l2:OptLits): OptLits =
     OptLits(Lits(join(l1.lits.map , l2.lits.map)), l1.rest++l2.rest)
   private def join(map1:Map[Bag[String],Int],map2:Map[Bag[String],Int]): Map[Bag[String],Int] = {
