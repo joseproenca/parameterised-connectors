@@ -102,15 +102,15 @@ class TestTypeCheck {
       "© 0 -> 0")
 
     // complex examples from the paper
-    val seqfifo = lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x)))
+    val seqfifo = lam(x,Tr(x - 1, sym(x - 1,1) & (fifo^x)))
     val zip = lam(x,
-      Tr( 2*x*(x-1), Sym(2*x*(x-1),2*x) &
+      Tr( 2*x*(x-1), sym(2*x*(x-1),2*x) &
         (((id^(x-y)) * (swap^y) * (id^(x-y)))^y<--x) ))
     val unzip = lam(x,
-      Tr( 2*x*(x-1), Sym(2*x*(x-1),2*x) &
+      Tr( 2*x*(x-1), sym(2*x*(x-1),2*x) &
         (((id^(y+1)) * (swap^(x-y-1)) * (id^(y+1)))^(y,x)) ))
     val sequencer = lam(n, (((dupl^n) & unzip(n)) *
-                             Tr(n, Sym(n-1,1) & ((fifo & dupl) * ((fifo & dupl)^(n-1))) & unzip(n) ) ) &
+                             Tr(n, sym(n-1,1) & ((fifo & dupl) * ((fifo & dupl)^(n-1))) & unzip(n) ) ) &
                            ((id^n) * (zip(n) & (Prim("drain",2,0)^n))))
     testOK(seqfifo,
       "∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1)) & ((x2 + (x - 1)) == (1 * x)) & (x1 >= 0) & (x2 >= 0) & ((1 + (x - 1)) == (1 * x)) & (1 >= 0) & (1 >= 0)",
@@ -141,6 +141,12 @@ class TestTypeCheck {
       "∀n:I . (1^n) * x9 -> (1^n) * (0^n) | ((x4 + x10) == ((1 * n) + x13)) & ((2 * n) == x3) & (1 >= 0) & (2 >= 0) & ((x3 + ((2 * n) * (n - 1))) == (((2 * n) * (n - 1)) + (2 * n))) & ((x4 + ((2 * n) * (n - 1))) == x2) & (x3 >= 0) & (x4 >= 0) & (((2 * n) + ((2 * n) * (n - 1))) == x1) & (x1 == Σ{0 ≤ y < n}(((y + 1) + (2 * ((n - y) - 1))) + (y + 1))) & (x2 == Σ{0 ≤ y < n}(((y + 1) + (2 * ((n - y) - 1))) + (y + 1))) & (x1 >= 0) & (x2 >= 0) & ((x9 + n) == ((n - 1) + 1)) & ((x10 + n) == x8) & (x9 >= 0) & (x10 >= 0) & ((2 + (2 * (n - 1))) == x7) & ((1 + (n - 1)) == (1 + (1 * (n - 1)))) & (1 == 1) & (1 >= 0) & (1 >= 0) & (1 >= 0) & (2 >= 0) & (1 == 1) & (1 >= 0) & (1 >= 0) & (1 >= 0) & (2 >= 0) & ((x7 + ((2 * n) * (n - 1))) == (((2 * n) * (n - 1)) + (2 * n))) & ((x8 + ((2 * n) * (n - 1))) == x6) & (x7 >= 0) & (x8 >= 0) & (((2 * n) + ((2 * n) * (n - 1))) == x5) & (x5 == Σ{0 ≤ y < n}(((y + 1) + (2 * ((n - y) - 1))) + (y + 1))) & (x6 == Σ{0 ≤ y < n}(((y + 1) + (2 * ((n - y) - 1))) + (y + 1))) & (x5 >= 0) & (x6 >= 0) & (x14 == (2 * n)) & ((x13 + ((2 * n) * (n - 1))) == (((2 * n) * (n - 1)) + (2 * n))) & ((x14 + ((2 * n) * (n - 1))) == x12) & (x13 >= 0) & (x14 >= 0) & (((2 * n) + ((2 * n) * (n - 1))) == x11) & (x11 == Σ{0 ≤ y < n}(((n - y) + (2 * y)) + (n - y))) & (x12 == Σ{0 ≤ y < n}(((n - y) + (2 * y)) + (n - y))) & (x11 >= 0) & (x12 >= 0) & (2 >= 0) & (0 >= 0)",
       "∀n:I . n -> n",
       "© 1 -> 1")
+      
+    // attempt at an alternative for zip: \x . sequence ( for y <- 0..x-1, id^(2y+1) * sym(x-y-1) * id^(x-y-1) )
+    // (based on a nice recursive suggestion from a reviewer for FACS.)
+    val zipalt = lam(x,
+      seq(x*2, (id^(y*2+1)) * sym(x-y-1,1) * (id^(x-y-1)) , y, x)  )
+
 
     // composing families and parameterised primitives
     testOK(  lam (y, Prim("c",0,3)^y) & lam(x,Prim("merger-n",x,1)) ,

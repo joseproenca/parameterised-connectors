@@ -6,7 +6,7 @@ import paramConnectors.TypeCheck.TypeCheckException
  * Created by jose on 17/05/15.
  */
 object DSL {
-  // goal: to write "fifo" x id $ id^2
+  // goal: to write "fifo" * id & id^2
   implicit def str2conn(s:String): Connector = Prim(s,1,1)
   implicit def str2IVar(s:String): IVar = IVar(s)
   implicit def str2BVar(s:String): BVar = BVar(s)
@@ -19,8 +19,8 @@ object DSL {
   def lam(x:I,c:Connector) = IAbs(x,c)
   def lam(x:B,c:Connector) = BAbs(x,c)
   def not(b:BExpr) = Not(b)
-
-  val Sym  = Symmetry
+  
+  val sym  = Symmetry
   val Tr   = Trace
   val Prim = paramConnectors.Prim
 
@@ -32,6 +32,10 @@ object DSL {
   val merger = Prim("merger",2,1)
   val drain = Prim("drain",2,0)
 
+  def seq(i:Interface, c:Connector, x:I, n:IExpr) =
+    Trace(Repl(i,n-1), (c^(x<--n)) & sym(Repl(i,n-1),i) ) | n>0
+  def seq(i:Interface, c:Connector, n:IExpr) =
+    Trace(Repl(i,n-1), (c^n) & sym(Repl(i,n-1),i) ) | n>0
 
 
   // overall methods to typecheck

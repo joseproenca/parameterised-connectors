@@ -5,7 +5,7 @@ object Show {
     case Seq(c1, c2)    => s"${showP(c1)} ; ${showP(c2)}"
     case Par(c1, c2)    => s"${showP(c1)} * ${showP(c2)}"
     case Id(_)          => "id"
-    case Symmetry(i, j) => s"swap(${apply(i)},${apply(j)})"
+    case Symmetry(i, j) => s"sym(${apply(i)},${apply(j)})"
     case Trace(i, c)    => s"Tr_${showP(i)}{${apply(c)}}"
     case Prim(name,_,_) => name
     case Exp(a, c)  => s"${showP(c)}^${showP(a)}"

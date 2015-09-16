@@ -95,7 +95,7 @@ object Solver extends App {
 
       // set concrete if negating the relevant vars yields more solutions
       var newExp = typ.const
-      val vars:Iterable[Var] = Utils.freeVars(Tensor(typ.i,typ.j)) //-- typ.args.vars
+      val vars:Iterable[Var] = Utils.freeVars(Tensor(typ.i,typ.j)) ++ typ.args.vars //-- typ.args.vars
 //      println(s"#### got relevant vars: ${vars.map(Show.showVar)}")
       for (v <- vars) v match {
         case IVar(x) =>
