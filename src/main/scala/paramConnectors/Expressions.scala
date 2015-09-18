@@ -51,11 +51,15 @@ sealed abstract class BExpr extends Expr {
   def ===(that:BExpr) =
     (this & that) | (Not(this) & Not(that))
   def |(that:BExpr) = Or(this,that)
-  def ?(that:IExpr) = new IfWrap(this,that)
+  def ?(that:IExpr) = new IfWrapI(this,that)
+  def ?(that:Connector) = new IfWrapC(this,that)
 }
 
-class IfWrap(ifc:BExpr,thenc:IExpr) {
+class IfWrapI(ifc:BExpr,thenc:IExpr) {
   def :?(elsec:IExpr) = ITE(ifc,thenc,elsec)
+}
+class IfWrapC(ifc:BExpr,thenc:Connector) {
+  def :?(elsec:Connector) = Choice(ifc,thenc,elsec)
 }
 
 case class BVal(b:Boolean) extends BExpr

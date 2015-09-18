@@ -158,7 +158,7 @@ object TypeCheck {
 
   def check(gamma:Context,a:IExpr): Unit = a match {
     case IVal(_)     =>
-    case v@IVar(_)   => if (!gamma(v)) throw new TypeCheckException(s"$v:Int not in the context ($gamma)")
+    case v@IVar(x)   => if (!gamma(v)) throw new TypeCheckException(s"$x:Int not in the context ($gamma)")
     case Add(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Sub(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Mul(e1, e2) => check(gamma,e1); check(gamma,e2)
@@ -168,7 +168,7 @@ object TypeCheck {
 
   def check(gamma:Context,b:BExpr): Unit = b match {
     case BVal(_)     =>
-    case v@BVar(x)   => if (!gamma(v)) throw new TypeCheckException(s"$v:Bool not in the context ($gamma)")
+    case v@BVar(x)   => if (!gamma(v)) throw new TypeCheckException(s"$x:Bool not in the context ($gamma)")
 //    case IEQ(e1, e2) => check(gamma,e1); check(gamma,e2)
     case EQ(e1, e2)  => check(gamma,e1); check(gamma,e2)
     case GT(e1, e2)  => check(gamma,e1); check(gamma,e2)

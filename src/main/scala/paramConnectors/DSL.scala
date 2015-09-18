@@ -10,6 +10,7 @@ object DSL {
   implicit def str2conn(s:String): Connector = Prim(s,1,1)
   implicit def str2IVar(s:String): IVar = IVar(s)
   implicit def str2BVar(s:String): BVar = BVar(s)
+  implicit def bool2BExp(b:Boolean): BExpr= BVal(b)
   implicit def int2IExp(n:Int): IExpr= IVal(n)
   implicit def int2Interface(n:Int): Interface = Port(IVal(n))
   implicit def exp2Interface(e:IExpr): Interface= Port(e)
@@ -37,6 +38,8 @@ object DSL {
   def seq(i:Interface, c:Connector, n:IExpr) =
     Trace(Repl(i,n-1), (c^n) & sym(Repl(i,n-1),i) ) | n>0
 
+  // included only for the demo at FACS'15
+  val x="x":I; val y="y":I; val z="z":I; val n="n":I; val b="b":B;
 
   // overall methods to typecheck
   /**
@@ -153,4 +156,42 @@ object DSL {
     // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
     Simplify(typ)
   }
+
+  /**
+   * Type check a connector (build tree, unify, and solve constraints), and print all intermediate results
+   * @param c connector to be type-checked
+   * @return the type of the connector - return a concrete type if one is found, otherwise the general one
+   */
+  def debug(c:Connector): Unit = {
+    println(c)
+    // 1 - build derivation tree
+    val oldtyp = TypeCheck.check(c)
+    println(s" - type-rules:    $oldtyp")
+    // 2 - unify constraints and get a substitution
+    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+    println(s" - [ unification: $subst ]")
+    println(s" - [ missing:     $rest ]")
+    // 3 - apply substitution to the type
+    val tmptyp = subst(oldtyp)
+    println(s" - substituted:   $tmptyp")
+    val newrest = subst.getConstBoundedVars(oldtyp)
+    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
+    println(s" - extended:      $typ")
+    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
+    val typev = Simplify(typ)
+    println(s" - simplified:    $typev")
+    // 5 - solve rest of the constraints
+    //val newsubst = Solver.solve(typev.const)
+    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
+    if (newrest != BVal(true)) newsubst.get.setConcrete()
+    println(s" - [ solution:    $newsubst ]")
+    // 6 - apply the new substitution to the previous type and eval
+    val concr = Eval(newsubst.get(typev))
+    println(s" - post-solver:   $concr")
+    // 7 - apply the new substitution to the previous type and eval
+    val inst = Eval.instantiate(newsubst.get(typev))
+    println(s" - instantiation: $inst")
+  }
+
 }

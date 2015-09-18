@@ -82,7 +82,7 @@ class TestTypeCheck {
       "© 0 -> 0")
 
     // conditionals
-    testOK( lam("a":B, Choice("a",id,dupl)) ,
+    testOK( lam("a":B, "a" ? id :? dupl) ,
       "∀a:B . 1 +a+ 1 -> 1 +a+ 2 | (1 >= 0) & (2 >= 0)" ,
       "∀a:B . 1 -> if a then 1 else 2" ,
       "© 1 -> 1")
