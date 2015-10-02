@@ -12,7 +12,7 @@ import org.chocosolver.solver.constraints.IntConstraintFactory._
 /**
  * Created by jose on 07/06/15.
  */
-object Solver extends App {
+object Solver {
 
   class UnhandledOperException(s:String) extends RuntimeException(s)
 

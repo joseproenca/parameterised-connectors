@@ -10,7 +10,7 @@ object Show {
     case Prim(name,_,_) => name
     case Exp(a, c)  => s"${showP(c)}^${showP(a)}"
     case ExpX(x, a, c)  => s"${showP(c)}^{${apply(x)}<${apply(a)}}"
-    case Choice(b, c1, c2) => s"if ${showP(c1)} then ${showP(c1)} else ${showP(c2)}"
+    case Choice(b, c1, c2) => s"if ${showP(b)} then ${showP(c1)} else ${showP(c2)}"
     case IAbs(x, c)     => s"\\${apply(x)}.${showP(c)}"
     case BAbs(x, c)     => s"\\${apply(x)}.${showP(c)}"
     case IApp(c, a)     => s"${showP(c)}(${apply(a)})"

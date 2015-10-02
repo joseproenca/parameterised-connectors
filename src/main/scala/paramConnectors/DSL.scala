@@ -170,7 +170,7 @@ object DSL {
     // 2 - unify constraints and get a substitution
     val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
     println(s" - [ unification: $subst ]")
-    println(s" - [ missing:     $rest ]")
+    println(s" - [ missing:     ${Show(rest)} ]")
     // 3 - apply substitution to the type
     val tmptyp = subst(oldtyp)
     println(s" - substituted:   $tmptyp")

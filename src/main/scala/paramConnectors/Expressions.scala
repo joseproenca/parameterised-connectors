@@ -57,9 +57,11 @@ sealed abstract class BExpr extends Expr {
 
 class IfWrapI(ifc:BExpr,thenc:IExpr) {
   def :?(elsec:IExpr) = ITE(ifc,thenc,elsec)
+  def +(elsec:IExpr)  = ITE(ifc,thenc,elsec)
 }
 class IfWrapC(ifc:BExpr,thenc:Connector) {
   def :?(elsec:Connector) = Choice(ifc,thenc,elsec)
+  def +(elsec:Connector) = Choice(ifc,thenc,elsec)
 }
 
 case class BVal(b:Boolean) extends BExpr

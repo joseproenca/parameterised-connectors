@@ -30,7 +30,7 @@ Our library provides 3 main functions to type check connectors:
 
  * ```typeInstance``` - performs the same steps as ```typeOf``` but provides an instance of the type, i.e., a type without constraints. This type can still be the most general type - it it is not a most general type, the type is annotated with ```©```  (standing for "concrete" type).
 
-The examples below show the usage of these functions with more complex examples. 
+An extra function ```debug``` returns all intermediate steps during type-checking. The examples below show the usage of these functions with more complex examples. 
 
 
 ```scala
@@ -48,9 +48,9 @@ typeOf(   lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 typeTree( lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 // returns ∀x:I,n:I . x + x -> n | (x + x) == n
 
-typeOf(    lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
+typeOf(    lam(x,Tr(x - 1, sym(x - 1,1) & (fifo^x))))
 // returns ∀x:I . 1 -> 1
-typeTree( lam(x,Tr(x - 1, Sym(x - 1,1) & (fifo^x))))
+typeTree( lam(x,Tr(x - 1, sym(x - 1,1) & (fifo^x))))
 // returns ∀x:I . x1 -> x2 | ((x1 + (x - 1)) == ((x - 1) + 1))
 //                         & ((x2 + (x - 1)) == x)
 //                         & ((1 + (x - 1)) == x)
@@ -62,7 +62,7 @@ typeOf(   lam(n, id^x ^ x<--n) )
 //                         & (x1 >= 0) & (x2 >= 0)
 typeTree( lam(n, id^x ^ x<--n) )
 // returns ∀n:I . x1 -> x2 | (x1 == Σ{0 ≤ x < n}x) & (x2 == Σ{0 ≤ x < n}x)
-/                          & (x1 >= 0) & (x2 >= 0)
+//                         & (x1 >= 0) & (x2 >= 0)
 typeInstance(lam(n, id^x ^ x<--n) )
 // returns © 0 -> 0
 

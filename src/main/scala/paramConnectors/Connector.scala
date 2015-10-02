@@ -1,5 +1,7 @@
 package paramConnectors
 
+import paramConnectors.TypeCheck.TypeCheckException
+
 sealed abstract class Connector {
   // helpers for the DSL
   def &(that:Connector) = Seq(this,that)
@@ -12,7 +14,11 @@ sealed abstract class Connector {
   def |(phi:BExpr): Connector = Restr(this,phi)
 
   // hides the details to the developer/user
-  override def toString = Show(this)
+  override def toString = try {
+    Show(this) + "\n   : "+Show(DSL.typeOf(this))
+  } catch {
+    case e: TypeCheckException => Show(this)+ "\n   ! Type error: "+e.getMessage
+  }
 }
 // helper for DSL
 case class ExpWrap(x:IVar,to:IExpr)
