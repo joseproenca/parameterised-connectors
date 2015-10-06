@@ -116,7 +116,10 @@ object Eval {
       case (a,b) => a & b
     }
     case Or(e1, e2) => (apply(e1),apply(e2)) match {
-      case (BVal(i1), BVal(i2)) => BVal(i1 || i2)
+      case (BVal(true),ev) => BVal(b=true)
+      case (BVal(false),ev) => ev
+      case (ev,BVal(true)) => BVal(b=true)
+      case (ev,BVal(false)) => ev
       case (a, b) => Or(a, b)
     }
     case Not(e2) => apply(e2) match {

@@ -17,6 +17,7 @@ object DSL {
 
   type I  = IVar
   type B = BVar
+  type Itf = Interface
   def lam(x:I,c:Connector) = IAbs(x,c)
   def lam(x:B,c:Connector) = BAbs(x,c)
   def not(b:BExpr) = Not(b)
@@ -25,13 +26,14 @@ object DSL {
   val Tr   = Trace
   val Prim = paramConnectors.Prim
 
+  val one = 1:Itf
   val swap = Symmetry(1,1)
   val id = Id(1)
   val fifo = Prim("fifo",1,1)
   val lossy = Prim("lossy",1,1)
-  val dupl = Prim("dupl",1,2)
-  val merger = Prim("merger",2,1)
-  val drain = Prim("drain",2,0)
+  val dupl = Prim("dupl",1,one*one)
+  val merger = Prim("merger",one*one,1)
+  val drain = Prim("drain",one*one,0)
 
   def seq(i:Interface, c:Connector, x:I, n:IExpr) =
     Trace(Repl(i,n-1), (c^(x<--n)) & sym(Repl(i,n-1),i) ) | n>0
@@ -63,8 +65,12 @@ object DSL {
     if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
     if (newrest != BVal(true)) newsubst.get.setConcrete()
     // 6 - apply the new substitution to the previous type and eval
-    val concr = Eval(newsubst.get(typev))
-    if (concr.isGeneral) concr
+    val concr = newsubst.get(typev)
+    val newrest2 = newsubst.get.getConstBoundedVars(concr)
+    val concr2 = Eval(Type(concr.args,concr.i,concr.j,concr.const & newrest2,concr.isGeneral))
+    if (concr2.isGeneral) {
+      concr2
+    }
     else typev
   }
 
@@ -136,7 +142,8 @@ object DSL {
     // 1 - build derivation tree
     val typ = TypeCheck.check(c)
     // evaluate (simplify) without substituting
-    Eval(typ)
+//    Eval(typ)
+    typ
   }
 
   /**
@@ -187,8 +194,10 @@ object DSL {
     if (newrest != BVal(true)) newsubst.get.setConcrete()
     println(s" - [ solution:    $newsubst ]")
     // 6 - apply the new substitution to the previous type and eval
-    val concr = Eval(newsubst.get(typev))
-    println(s" - post-solver:   $concr")
+    val concr = newsubst.get(typev)
+    val newrest2 = newsubst.get.getConstBoundedVars(concr)
+    val concr2 = Eval(Type(concr.args,concr.i,concr.j,concr.const & newrest2,concr.isGeneral))
+    println(s" - post-solver:   $concr2")
     // 7 - apply the new substitution to the previous type and eval
     val inst = Eval.instantiate(newsubst.get(typev))
     println(s" - instantiation: $inst")

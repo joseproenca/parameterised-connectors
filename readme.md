@@ -46,7 +46,8 @@ typeOf( lam(x,oneToTwo^x)(2) )
 typeOf(   lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 // returns ∀x:I,n:I . 2 * x -> 2 * x | n == (2 * x)
 typeTree( lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
-// returns ∀x:I,n:I . x + x -> n | (x + x) == n
+// returns ∀x:I,n:I . (1^x) ⊗ (1^x) -> 1^n | (((1 * x) + (1 * x)) == (1 * n))
+//                                         & (1 >= 0) & (1 >= 0)
 
 typeOf(    lam(x,Tr(x - 1, sym(x - 1,1) & (fifo^x))))
 // returns ∀x:I . 1 -> 1
@@ -69,7 +70,8 @@ typeInstance(lam(n, id^x ^ x<--n) )
 typeOf(   lam(n, id^x ^ x<--n)(3) )
 // returns 3 -> 3
 typeTree( lam(n, id^x ^ x<--n)(3) )
-// returns x1 -> x2 | (x1 == 3) & (x2 == 3) & (x1 >= 0) & (x2 >= 0)
+// returns x1 -> x2 | (x1 == Σ{0 ≤ x < 3}x) & (x2 == Σ{0 ≤ x < 3}x)
+//                  & (x1 >= 0) & (x2 >= 0)
 
 typeOf( lam(x,Tr(x,id^3)) )
 // returns ∀x:I . (-1 * x) + 3 -> 3 + (-1 * x) | (((-1 * x) + 3) >= 0)

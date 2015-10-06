@@ -104,9 +104,9 @@ object Solver {
         case BVar(x) =>
           if (boolVars contains x) {
             if (boolVars(x).getValue == 1)
-              newExp = newExp & BVar(x)
-            else
               newExp = newExp & Not(BVar(x))
+            else
+              newExp = newExp & BVar(x)
           }
       }
       if (vars.nonEmpty) {
@@ -141,7 +141,7 @@ object Solver {
 //    else
 //      solver.set(IntStrategyFactory.domOverWDeg(intVars.values.toArray,0))
     val vars = solver.retrieveIntVars()
-        if (intVars.isEmpty)
+        if (intVars.isEmpty && boolVars.isEmpty)
           solver.set(IntStrategyFactory.lexico_LB())
         else
         solver.set(IntStrategyFactory.domOverWDeg(vars,0))

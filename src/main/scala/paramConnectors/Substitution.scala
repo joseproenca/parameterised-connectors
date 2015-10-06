@@ -214,14 +214,14 @@ class Substitution(private val items:List[Item]) {
       newvars = Set[Var]()
       for (it <- items) it match {
         case IItem(v, e) =>
-          //        println(s"### checking if ${Show(v)} == ${Show(e)} has vars in $bounded.")
+//          println(s"### checking if ${Show(v)} == ${Show(e)} has vars in $round.")
           if (round contains v) {
             newrest += (v === e)
             newvars ++= (Utils.freeVars(e) -- history)
             //          println("##### yes!")
           }
         case BItem(v, e) =>
-          //        println(s"### checking if ${Show(v)} == ${Show(e)} has vars in $bounded.")
+//          println(s"### checking if ${Show(v)} == ${Show(e)} has vars in $round.")
           if (round contains v) {
             newrest += (v === e)
             newvars ++= (Utils.freeVars(e) -- history)

@@ -20,7 +20,7 @@ class TestShow {
     testPrint("fifo",
               "fifo")
     testPrint("fifo" * id,
-              "fifo * id")
+              "fifo ⊗ id")
     testPrint(id^3,
               "id^3")
     testPrint(Trace(2,"fifo" & id),
@@ -28,6 +28,6 @@ class TestShow {
     testPrint(IAbs("x","fifo"^"x"),
               "\\x.(fifo^x)")
     testPrint(Trace(2,("fifo"^3) & (id * (id^3))),
-              "Tr_2{(fifo^3) ; (id * (id^3))}")
+              "Tr_2{(fifo^3) ; (id ⊗ (id^3))}")
   }
 }

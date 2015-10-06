@@ -3,16 +3,17 @@ package paramConnectors
 object Show {
   def apply(con: Connector): String = con match {
     case Seq(c1, c2)    => s"${showP(c1)} ; ${showP(c2)}"
-    case Par(c1, c2)    => s"${showP(c1)} * ${showP(c2)}"
+    case Par(c1, c2)    => s"${showP(c1)} ⊗ ${showP(c2)}"
     case Id(_)          => "id"
     case Symmetry(i, j) => s"sym(${apply(i)},${apply(j)})"
     case Trace(i, c)    => s"Tr_${showP(i)}{${apply(c)}}"
     case Prim(name,_,_) => name
     case Exp(a, c)  => s"${showP(c)}^${showP(a)}"
     case ExpX(x, a, c)  => s"${showP(c)}^{${apply(x)}<${apply(a)}}"
-    case Choice(b, c1, c2) => s"if ${showP(b)} then ${showP(c1)} else ${showP(c2)}"
-    case IAbs(x, c)     => s"\\${apply(x)}.${showP(c)}"
-    case BAbs(x, c)     => s"\\${apply(x)}.${showP(c)}"
+    case Choice(b, c1, c2) => s"${showP(b)} ? ${showP(c1)} ⊕ ${showP(c2)}"
+                             //s"if ${showP(b)} then ${showP(c1)} else ${showP(c2)}"
+    case IAbs(x, c)     => s"\\${apply(x)}${showAP(c)}"
+    case BAbs(x, c)     => s"\\${apply(x)}${showAP(c)}"
     case IApp(c, a)     => s"${showP(c)}(${apply(a)})"
     case BApp(c, b)     => s"${showP(c)}(${apply(b)})"
     case Restr(c,b)     => s"${showP(c)} | ${showP(b)}"
@@ -22,12 +23,18 @@ object Show {
          Exp(_,_) | ExpX(_,_,_) | Restr(_,_) => s"(${apply(con)})"
     case _ => apply(con)
   }
+  private def showAP(con:Connector): String = con match {
+    case IAbs(x,c) => s",${apply(x)}${showAP(c)}"
+    case BAbs(x,c) => s",${apply(x)}${showAP(c)}"
+    case _ => s".${showP(con)}"
+  }
 
   def apply(itf: Interface): String = itf match {
-    case Tensor(i, j)  => s"${showP(i)} * ${showP(j)}"
+    case Tensor(i, j)  => s"${showP(i)} ⊗ ${showP(j)}"
     case Port(a)       => apply(a)
     case Repl(i, a)    => s"${showP(i)}^${showP(a)}"
-    case Cond(b, i, j) => s"${showP(i)} +${showP(b)}+ ${showP(j)}"
+    case Cond(b, i, j) => s"${showP(b)} ? ${showP(i)} ⊕ ${showP(j)}"
+                          //s"${showP(i)} +${showP(b)}+ ${showP(j)}"
   }
   private def showP(itf:Interface):String = itf match {
     case Port(a) => showP(a)

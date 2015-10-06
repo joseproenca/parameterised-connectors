@@ -151,6 +151,7 @@ object TypeCheck {
           throw new TypeCheckException(s"application: expected 'bool', found ${x.getClass}.")
       }
     case Restr(c,phi) =>
+      check(gamma,phi)
       val Type(args,i,j,psi,isG) = check(gamma,c)
       Type(args,i,j,psi & phi)
   }
