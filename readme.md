@@ -12,13 +12,18 @@ The type checking uses a mix of constraint unification and constraint solving.
 This project is a follow up and a simpler approach to the ideas experimented in https://github.com/joseproenca/connector-family, using a different construct to produce loops (traces instead of duals) and not considering connectors as parameters.
 
 The following example shows how to quickly build and type-check a connector.
-To try the blocks of code below, the easiest way is to use ```sbt``` by using the command ```sbt console``` and copy-paste this code into the console.
+To try the blocks of code below, the easiest way is to use ```sbt``` build tool by using the command ```sbt console``` and copy-paste this code into the console.
 
 ```scala
 import paramConnectors.DSL._
 
-typeOf( lam("x":I,"some-channel"^"x") )
-// ∀x:I . x -> x
+typeOf( lam("x":I, id^"x") )
+// returns the type: ∀x:I . x -> x
+
+fifo*id  &  drain
+// returns the connector with type information:
+// (fifo ⊗ id) ; drain
+//    : 2 -> 0
 ```
 
 The examples below show more complex examples. 
@@ -36,9 +41,10 @@ An extra function ```debug``` returns all intermediate steps during type-checkin
 ```scala
 val x:I = "x"
 val n:I = "n"
+val b:B = "b"
 val oneToTwo = Prim("oneToTwo",1,2) // 1 input, 2 outputs
 // other primitives in the DSL:
-//   id:1->1, lossy:1->1, fifo:1->1, merger:2->1,  dupl:1->2
+//   id:1->1, lossy:1->1, fifo:1->1, merger:2->1, dupl:1->2, drain:2->0
 
 typeOf( lam(x,oneToTwo^x)(2) )
 // returns 2 -> 4
@@ -48,6 +54,11 @@ typeOf(   lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 typeTree( lam(x,(id^x) * (id^x)) & lam(n,fifo^n) )
 // returns ∀x:I,n:I . (1^x) ⊗ (1^x) -> 1^n | (((1 * x) + (1 * x)) == (1 * n))
 //                                         & (1 >= 0) & (1 >= 0)
+
+typeOf(   lam(b, b? fifo + drain) )
+// returns ∀b:B . if b then 1 else 2 -> if b then 1 else 0
+typeOf(   lam(b, b? fifo + drain)  &  id )
+// returns ∀b:B . 1 -> 1 | b
 
 typeOf(    lam(x,Tr(x - 1, sym(x - 1,1) & (fifo^x))))
 // returns ∀x:I . 1 -> 1
