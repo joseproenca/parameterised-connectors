@@ -41,7 +41,7 @@ object DSL {
     Trace(Repl(i,n-1), (c^n) & sym(Repl(i,n-1),i) ) | n>0
 
   // included only for the demo at FACS'15
-  val x="x":I; val y="y":I; val z="z":I; val n="n":I; val b="b":B;
+  val x="x":I; val y="y":I; val z="z":I; val n="n":I; val b="b":B; val c="c":B;
 
   // overall methods to typecheck
   /**
@@ -170,37 +170,45 @@ object DSL {
    * @return the type of the connector - return a concrete type if one is found, otherwise the general one
    */
   def debug(c:Connector): Unit = {
-    println(c)
-    // 1 - build derivation tree
-    val oldtyp = TypeCheck.check(c)
-    println(s" - type-rules:    $oldtyp")
-    // 2 - unify constraints and get a substitution
-    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
-    println(s" - [ unification: $subst ]")
-    println(s" - [ missing:     ${Show(rest)} ]")
-    // 3 - apply substitution to the type
-    val tmptyp = subst(oldtyp)
-    println(s" - substituted:   $tmptyp")
-    val newrest = subst.getConstBoundedVars(oldtyp)
-    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
-    println(s" - extended:      $typ")
-    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
-    val typev = Simplify(typ)
-    println(s" - simplified:    $typev")
-    // 5 - solve rest of the constraints
-    //val newsubst = Solver.solve(typev.const)
-    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
-    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    if (newrest != BVal(true)) newsubst.get.setConcrete()
-    println(s" - [ solution:    $newsubst ]")
-    // 6 - apply the new substitution to the previous type and eval
-    val concr = newsubst.get(typev)
-    val newrest2 = newsubst.get.getConstBoundedVars(concr)
-    val concr2 = Eval(Type(concr.args,concr.i,concr.j,concr.const & newrest2,concr.isGeneral))
-    println(s" - post-solver:   $concr2")
-    // 7 - apply the new substitution to the previous type and eval
-    val inst = Eval.instantiate(newsubst.get(typev))
-    println(s" - instantiation: $inst")
+    try{
+      println(Show(c))
+      // 1 - build derivation tree
+      val oldtyp = TypeCheck.check(c)
+      println(s" - type-rules:    $oldtyp")
+      // 2 - unify constraints and get a substitution
+      val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+      println(s" - [ unification: $subst ]")
+      println(s" - [ missing:     ${Show(rest)} ]")
+      // 3 - apply substitution to the type
+      val tmptyp = subst(oldtyp)
+      println(s" - substituted:   $tmptyp")
+      val newrest = subst.getConstBoundedVars(oldtyp)
+      val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
+      println(s" - extended:      $typ")
+      // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
+      val typev = Simplify(typ)
+      println(s" - simplified:    $typev")
+      // 5 - solve rest of the constraints
+      //val newsubst = Solver.solve(typev.const)
+      val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+      if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
+      if (newrest != BVal(true)) newsubst.get.setConcrete()
+      println(s" - [ solution:    $newsubst ]")
+      // 6 - apply the new substitution to the previous type and eval
+      val concr = newsubst.get(typev)
+      val newrest2 = newsubst.get.getConstBoundedVars(concr)
+      val concr2 = Eval(Type(concr.args,concr.i,concr.j,concr.const & newrest2,concr.isGeneral))
+      println(s" - post-solver:   $concr2")
+      // 7 - apply the new substitution to the previous type and eval
+      val inst = Eval.instantiate(newsubst.get(typev))
+      println(s" - instantiation: $inst")
+      // 8 - show final type
+      println(" : "+Show(typeOf(c)))
+    }
+    catch {
+      case e:TypeCheckException => println(s" ! type checking error: ${e.getMessage}")
+      case x : Throwable => throw x
+    }
   }
 
 }
