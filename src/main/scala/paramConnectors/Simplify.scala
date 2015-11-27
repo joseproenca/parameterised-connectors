@@ -65,9 +65,9 @@ object Simplify {
 //      else if (degree  == 1)
 //        iexpr2lits( (Substitution(x,to-Ival(1))(e2) - Substitution(x,from)(e2)) * ((to - from) / 2)
       else
-        OptLits(Lits(Map(Bag[String]() -> 0)),Set(e))
+        OptLits(Lits(Map(Bag[String]() -> 0)), Set(Sum(x,simpFrom,simpTo,e2)))
     case ITE(b, ifTrue, ifFalse) =>
-      OptLits(Lits(Map(Bag[String]() -> 0)),Set(e))
+      OptLits(Lits(Map(Bag[String]() -> 0)),Set(ITE(apply(b),apply(ifTrue),apply(ifFalse))))
   }
 
   def lits2IExpr(l:OptLits): IExpr = {

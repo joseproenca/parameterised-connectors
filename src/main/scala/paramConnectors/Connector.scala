@@ -12,6 +12,7 @@ sealed abstract class Connector {
   def apply(that:IExpr): Connector = IApp(this,that)
   def apply(that:BExpr): Connector = BApp(this,that)
   def |(phi:BExpr): Connector = Restr(this,phi)
+  def |+|(that:Connector) = BAbs(BVar("$"),Choice(BVar("$"),this,that))
 
   // hides the details to the developer/user
   override def toString = try {

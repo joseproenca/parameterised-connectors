@@ -52,16 +52,21 @@ sealed abstract class BExpr extends Expr {
     (this & that) | (Not(this) & Not(that))
   def |(that:BExpr) = Or(this,that)
   def ?(that:IExpr) = new IfWrapI(this,that)
-  def ?(that:Connector) = new IfWrapC(this,that)
+  def ?(that:Connector) = new IfWrapC(this->that)
 }
 
 class IfWrapI(ifc:BExpr,thenc:IExpr) {
-  def :?(elsec:IExpr) = ITE(ifc,thenc,elsec)
   def +(elsec:IExpr)  = ITE(ifc,thenc,elsec)
 }
-class IfWrapC(ifc:BExpr,thenc:Connector) {
-  def :?(elsec:Connector) = Choice(ifc,thenc,elsec)
-  def +(elsec:Connector) = Choice(ifc,thenc,elsec)
+// IfWrapC has a list of pars (ifGuard,connector).
+// It needs an else branch to become a connector (via "+ <else>").
+class IfWrapC(val ifthen:List[(BExpr,Connector)]) {
+  def this(ifthen:(BExpr,Connector)) = this(List(ifthen))
+  def +(elsec:Connector): Connector = ifthen match {
+    case Nil => elsec
+    case (ifc,thenc)::rest => Choice(ifc,thenc, new IfWrapC(rest)+elsec)
+  }
+  def +(elseIfWrap:IfWrapC) = new IfWrapC(ifthen ::: elseIfWrap.ifthen)
 }
 
 case class BVal(b:Boolean) extends BExpr
