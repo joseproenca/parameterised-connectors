@@ -100,6 +100,10 @@ class TestTypeCheck {
       "∀x:I,y:I . 1^x -> 1^y | ((1 * x) == (1 * y)) & (1 >= 0) & (1 >= 0) & (x < 5)",
       "∀x:I,y:I . y -> y | (y < 5) & (x == y)",
       "© 0 -> 0")
+    testOK( lam(x, (fifo^x) | (x<5)) & lam(y, id^y),
+      "∀x:I,y:I . 1^x -> 1^y | ((1 * x) == (1 * y)) & (1 >= 0) & (1 >= 0) & (x < 5)",
+      "∀x:I,y:I . y -> y | (y < 5) & (x == y)",
+      "© 0 -> 0")
 
     // complex examples from the paper
     val seqfifo = lam(n,Tr(n - 1, sym(n - 1,1) & (fifo^n)))

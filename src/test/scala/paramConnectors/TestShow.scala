@@ -3,6 +3,7 @@ package paramConnectors
 import org.junit.Test
 import org.junit.Assert._
 import DSL._
+import picc.DSL._
 
 class TestShow {
 
@@ -29,5 +30,10 @@ class TestShow {
               "\\x.(fifo^x)")
     testPrint(Trace(2,("fifo"^3) & (id * (id^3))),
               "Tr_2{(fifo^3) ; (id ⊗ (id^3))}")
+  }
+
+  @Test def testPicc: Unit = {
+    picc.DSL.fifo("a","b",Some(3)).run()
+    assert(true)
   }
 }

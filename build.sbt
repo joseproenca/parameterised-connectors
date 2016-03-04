@@ -2,16 +2,16 @@ name := "parameterised-connectors"
 
 version := "1.0"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.10.5" //"2.11.7" -> strangely requires old version of picc (github)
 
-libraryDependencies += "junit" % "junit" % "4.12"
+libraryDependencies ++= Seq(
+  "junit" % "junit" % "4.12",
+  "org.choco-solver" % "choco-solver" % "3.3.1-j7",
+  "org.slf4j" % "slf4j-simple" % "1.7.12",
+  "io.github.nicolasstucki" %% "multisets" % "0.3"
+)
 
-libraryDependencies += "org.choco-solver" % "choco-solver" % "3.3.1-j7"
-
-libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.12"
-
-libraryDependencies += "io.github.nicolasstucki" %% "multisets" % "0.3"
-
+// libraryDependencies += ProjectRef(uri("https://github.com/joseproenca/picc"),"picc")
 
 //libraryDependencies += "org.matheclipse" % "matheclipse-parser" % "0.0.7"
 //

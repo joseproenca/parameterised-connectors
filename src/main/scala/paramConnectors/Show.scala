@@ -9,7 +9,7 @@ object Show {
     case Trace(i, c)    => s"Tr_${showP(i)}{${apply(c)}}"
     case Prim(name,_,_) => name
     case Exp(a, c)  => s"${showP(c)}^${showP(a)}"
-    case ExpX(x, a, c)  => s"${showP(c)}^{${apply(x)}<${apply(a)}}"
+    case ExpX(x, a, c)  => s"${showP(c)}^{${apply(x)}<--${apply(a)}}"
     case Choice(b, c1, c2) => s"${showP(b)} ? ${showP(c1)} ⊕ ${showP(c2)}"
                              //s"if ${showP(b)} then ${showP(c1)} else ${showP(c2)}"
     case IAbs(x, c)     => s"\\${apply(x)}${showAP(c)}"

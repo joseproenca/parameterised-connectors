@@ -134,6 +134,8 @@ object TypeCheck {
       Type(args + newx ,i,j,phi,isG)
     case IApp(c, a) =>
       val Type(args,i,j,phi,isG) = check(gamma,c)
+      if (args.vars.isEmpty)
+        throw new TypeCheckException(s"application: ${Show(c)} is applied to ${Show(a)} but it does not expect arguments")
       args.vars.head match {
         case x@IVar(_) =>
           val s = Substitution(x, a)
@@ -143,6 +145,8 @@ object TypeCheck {
       }
     case BApp(c, b) =>
       val Type(args,i,j,phi,isG) = check(gamma,c)
+      if (args.vars.isEmpty)
+        throw new TypeCheckException(s"application: ${Show(c)} is applied to ${Show(b)} but it does not expect arguments")
       args.vars.head match {
         case x@BVar(_) =>
           val s = Substitution(x, b)

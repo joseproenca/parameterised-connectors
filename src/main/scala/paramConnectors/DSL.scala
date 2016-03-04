@@ -211,4 +211,10 @@ object DSL {
     }
   }
 
+  /**
+    * Finds an instance of the connector, and removes applications, lambdas, and restrictions
+    * @param c connector to be reduced
+    * @return rediced connector
+    */
+  def reduce(c:Connector):Connector = Eval.reduce(c)
 }

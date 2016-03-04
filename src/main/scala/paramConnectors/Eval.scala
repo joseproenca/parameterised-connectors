@@ -9,7 +9,8 @@ object Eval {
 
   /**
    * Evaluates an interface by performing operations over known values
-   * @param itf interface being evaluated
+    *
+    * @param itf interface being evaluated
    * @return
    */
   def apply(itf:Interface): Interface =
@@ -17,7 +18,8 @@ object Eval {
 
   /**
    * Evaluates an expression by performing operations over known values
-   * @param e expression being evaluated
+    *
+    * @param e expression being evaluated
    * @return
    */
   def apply(e:IExpr): IExpr = e match {
@@ -75,7 +77,8 @@ object Eval {
 
   /**
    * Evaluates an expression by performing operations over known values
-   * @param e expression being evaluated
+    *
+    * @param e expression being evaluated
    * @return
    */
   def apply(e:BExpr): BExpr = e match {
@@ -131,7 +134,8 @@ object Eval {
 
   /**
    * Evaluates a type by performing operations over known values
-   * @param t type being evaluated
+    *
+    * @param t type being evaluated
    * @return type after evaluation
    */
   def apply(t:Type): Type =
@@ -140,7 +144,8 @@ object Eval {
   /**
    * Creates an instance of a type by using the constraint solver
    * and by adding default values of still undefined arguments.
-   * @param t type to be instantiated
+    *
+    * @param t type to be instantiated
    * @return instance of the type t
    */
   def instantiate(t:Type): Type = {
@@ -155,7 +160,8 @@ object Eval {
   /**
    * Adds default values to arguments (vars) to a substitution
    * that may already define some of these arguments.
-   * @param args variables that will be (partially) added to the substitution
+    *
+    * @param args variables that will be (partially) added to the substitution
    * @param s original substitution
    * @return new (extended) substitution
    */
@@ -173,4 +179,87 @@ object Eval {
   }
 
 
+  /**
+    * instantiates a connector by finding a suitable substitution and applying it to the connector
+    *
+    * @param c
+    * @return
+    */
+  def instantiate(c:Connector) : Connector = {
+    // 1 - build derivation tree
+    val type_1 = TypeCheck.check(c)
+    // 2 - unify constraints and get a substitution
+    val (subst_1,rest) = Unify.getUnification(type_1.const,type_1.args.vars)
+    // 3 - apply substitution to the type
+    val type_2 = subst_1(type_1)
+    val newrest = subst_1.getConstBoundedVars(type_1)
+    val type_3 = Type(type_2.args,type_2.i,type_2.j,type_2.const & newrest,type_2.isGeneral)
+    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
+    val type_ = Simplify(type_3)
+    // 5 - solve rest of the constraints
+    val subst_2 = Solver.solve(type_) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+    if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
+    var subst = subst_1 ++ subst_2.get
+    if (newrest != BVal(true)) subst.setConcrete()
+
+    var res = c
+    for (a <- type_.args.vars){
+      var (expr,subst_) = subst.pop(a)
+      subst = subst_
+      expr match {
+        case Some(e:IExpr) => res = res.apply(e)
+        case Some(e:BExpr) => res = res.apply(e)
+        case None => a match {
+          case x:IVar => res = res.apply(IVal(1))
+          case x:BVar => res = res.apply(BVal(true))
+        }
+      }
+    }
+    subst(res)
+  }
+
+  /**
+    * Finds an instance of the connector, and removes applications, lambdas, and restrictions
+    * @param c connector to be reduced
+    * @return rediced connector
+    */
+  def reduce(c:Connector): Connector = reduceAux(instantiate(c))
+  private def reduceAux(con:Connector): Connector = {
+    con match {
+      case Seq(c1, c2) => Seq(reduceAux(c1), reduceAux(c2))
+      case Par(c1, c2) => Par(reduceAux(c1), reduceAux(c2))
+      case Trace(i, c) => Trace(i, reduceAux(c))
+      case Exp(a, c) => Exp(a, reduceAux(c))
+      case ExpX(x, a, c) => ExpX(x, a, reduceAux(c))
+      case Choice(b, c1, c2) => Choice(b, reduceAux(c1), reduceAux(c2))
+      case IAbs(x, c) => IAbs(x, reduceAux(c))
+      case BAbs(x, c) => BAbs(x, reduceAux(c))
+      case IApp(c, a) => reduceApp(reduceAux(c), a).getOrElse(throw new TypeCheckException(s"failed to apply $a to $c"))
+      case BApp(c, b) => reduceApp(reduceAux(c), b).getOrElse(throw new TypeCheckException(s"failed to apply $b to $c"))
+      case Restr(c, phi) => reduceAux(c)
+      case _ => con
+    }
+  }
+  private def reduceApp(con:Connector,e:Expr): Option[Connector] = {
+    con match {
+      case Seq(c1, c2) =>
+        val t1 = for (c11 <- reduceApp(c1, e)) yield Seq(c11, c2)
+        t1.orElse(for (c21 <- reduceApp(c2, e)) yield Seq(c1, c21))
+      case Par(c1, c2) =>
+        val t1 = for (c11 <- reduceApp(c1, e)) yield Par(c11, c2)
+        t1.orElse(for (c21 <- reduceApp(c2, e)) yield Par(c1, c21))
+      case Trace(i, c) => for (c1 <- reduceApp(c, e)) yield Trace(i, c1)
+      case Exp(a, c) => for (c1 <- reduceApp(c, e)) yield Exp(a, c1)
+      case ExpX(x, a, c) => for (c1 <- reduceApp(c, e)) yield ExpX(x, a, c1)
+      case Choice(b, c1, c2) =>
+        val t1 = for (c11 <- reduceApp(c1, e)) yield Choice(b, c11, c2)
+        t1.orElse(for (c21 <- reduceApp(c2, e)) yield Choice(b, c1, c21))
+      case IAbs(x, c) if e.isInstanceOf[IExpr] => Some(Substitution(x, e.asInstanceOf[IExpr])(c))
+      case BAbs(x, c) if e.isInstanceOf[BExpr] => Some(Substitution(x, e.asInstanceOf[BExpr])(c))
+      case IApp(c, a) => for (c1 <- reduceApp(c, e)) yield IApp(c1, a)
+      case BApp(c, b) => for (c1 <- reduceApp(c, e)) yield BApp(c1, b)
+      case Restr(c, phi) => for (c1 <- reduceApp(c, e)) yield Restr(c1, phi)
+      case _ => None
+    }
+  }
 }

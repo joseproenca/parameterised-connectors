@@ -1,7 +1,9 @@
 package paramConnectors
 
+import scala.collection.immutable.Nil
+
 /**
- * Created by jose on 25/05/15.
+  * Created by jose on 25/05/15.
  */
 
 private sealed abstract class Item {
@@ -19,7 +21,8 @@ private case class BItem(v:BVar,e:BExpr) extends Item {
 
 /**
  * List of pairs (variable -> expression) that can be applied in succession.
- * @param items pairs of (variable -> expression) to be replaced
+  *
+  * @param items pairs of (variable -> expression) to be replaced
  */
 class Substitution(private val items:List[Item]) {
 //  private implicit def pair2IItem(p:(IVar,IExpr)): IItem = IItem(p._1,p._2)
@@ -45,6 +48,14 @@ class Substitution(private val items:List[Item]) {
     val res = new Substitution(items ::: that.items)
     if (!isGeneral || !that.isGeneral) res.setConcrete()
     res
+  }
+  def pop(x:Var): (Option[Expr],Substitution) = items match {
+    case Nil => (None,this)
+    case IItem(`x`,e)::tl => (Some(e),new Substitution(tl))
+    case BItem(`x`,e)::tl => (Some(e),new Substitution(tl))
+    case hd::tl =>
+      val (e,sub) = new Substitution(tl).pop(x)
+      (e,new Substitution(hd::sub.items))
   }
 
   def apply(exp:BExpr): BExpr = {
@@ -191,7 +202,8 @@ class Substitution(private val items:List[Item]) {
 
   /**
    * get extra constraints for the type after unification, from the substitution, if applicable
-   * @param typ type after unification
+    *
+    * @param typ type after unification
    * @return extra constraints
    */
   def getConstBoundedVars(typ:Type): BExpr = {
