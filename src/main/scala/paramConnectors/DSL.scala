@@ -40,7 +40,7 @@ object DSL {
   def seq(i:Interface, c:Connector, n:IExpr) =
     Trace(Repl(i,n-1), (c^n) & sym(Repl(i,n-1),i) ) | n>0
 
-  // included only for the demo at FACS'15
+  // included for the demo at FACS'15
   val x="x":I; val y="y":I; val z="z":I; val n="n":I; val b="b":B; val c="c":B;
 
   // overall methods to typecheck
@@ -51,27 +51,29 @@ object DSL {
    */
   def typeOf(c:Connector): Type = {
     // 1 - build derivation tree
-    val oldtyp = TypeCheck.check(c)
+    val type_1 = TypeCheck.check(c)
     // 2 - unify constraints and get a substitution
-    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+    val (subst_1,rest_1) = Unify.getUnification(type_1.const,type_1.args.vars)
     // 3 - apply substitution to the type
-    val tmptyp = subst(oldtyp)
-    val newrest = subst.getConstBoundedVars(oldtyp)
-    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
-    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
-    val typev = Simplify(typ)
-    // 5 - solve rest of the constraints
-    val newsubst = Solver.solve(typev)
-    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    if (newrest != BVal(true)) newsubst.get.setConcrete()
-    // 6 - apply the new substitution to the previous type and eval
-    val concr = newsubst.get(typev)
-    val newrest2 = newsubst.get.getConstBoundedVars(concr)
-    val concr2 = Eval(Type(concr.args,concr.i,concr.j,concr.const & newrest2,concr.isGeneral))
-    if (concr2.isGeneral) {
-      concr2
-    }
-    else typev
+    val rest_2 = subst_1(rest_1)
+    val type_2b = Type(type_1.args,subst_1(type_1.i),subst_1(type_1.j),rest_2,type_1.isGeneral)
+    // 4 - extend with lost constraints over argument-variables
+    val rest_3 = subst_1.getConstBoundedVars(type_2b)
+    val type_3 = Type(type_2b.args,type_2b.i,type_2b.j,rest_2 & rest_3,type_2b.isGeneral)
+    // 4.1 - evaluate and simplify type
+    val type_4 = Simplify(type_3)
+    // 5 - solve constraints
+    val subst_2 = Solver.solve(type_4)
+    if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
+    if (rest_3 != BVal(true)) subst_2.get.setConcrete()
+    // 6 - apply subst_2
+    val type_5 = subst_2.get(type_4)
+    val rest_4 = subst_2.get.getConstBoundedVars(type_5)
+    val type_6 = Eval(Type(type_5.args,type_5.i,type_5.j,type_5.const & rest_4,type_5.isGeneral))
+    // 7 - return type from solver ONLY if it is general
+    if (type_6.isGeneral)
+      type_6
+    else type_4
   }
 
   /**
@@ -81,22 +83,38 @@ object DSL {
    */
   def typeInstance(c:Connector): Type = {
     // 1 - build derivation tree
-    val oldtyp = TypeCheck.check(c)
+    val type_1 = TypeCheck.check(c)
     // 2 - unify constraints and get a substitution
-    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+    val (subst_1,rest_1) = Unify.getUnification(type_1.const,type_1.args.vars)
     // 3 - apply substitution to the type
-    val tmptyp = subst(oldtyp)
-    val newrest = subst.getConstBoundedVars(oldtyp)
-    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
-    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
-    val typev = Simplify(typ)
-    // 5 - solve rest of the constraints
-    //val newsubst = Solver.solve(typev.const)
-    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
-    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    if (newrest != BVal(true)) newsubst.get.setConcrete()
+    val rest_2 = subst_1(rest_1)
+    val type_2b = Type(type_1.args,subst_1(type_1.i),subst_1(type_1.j),rest_2,type_1.isGeneral)
+    // 4 - extend with lost constraints over argument-variables
+    val rest_3 = subst_1.getConstBoundedVars(type_2b)
+    val type_3 = Type(type_2b.args,type_2b.i,type_2b.j,rest_2 & rest_3,type_2b.isGeneral)
+    // 4.1 - evaluate and simplify type
+    val type_4 = Simplify(type_3)
+    // 5 - solve constraints
+    val subst_2 = Solver.solve(type_4)
+    if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
+    if (rest_3 != BVal(true)) subst_2.get.setConcrete()
+//    // 1 - build derivation tree
+//    val type_1 = TypeCheck.check(c)
+//    // 2 - unify constraints and get a substitution
+//    val (subst_1,rest_1) = Unify.getUnification(type_1.const,type_1.args.vars)
+//    // 3 - apply substitution to the type
+//    val type_2 = subst_1(type_1)
+//    val rest_2 = subst_1.getConstBoundedVars(type_1)
+//    val type_3 = Type(type_2.args,type_2.i,type_2.j,type_2.const & rest_2,type_2.isGeneral)
+//    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
+//    val type_4 = Simplify(type_3)
+//    // 5 - solve rest of the constraints
+//    //val newsubst = Solver.solve(typev.const)
+//    val newsubst = Solver.solve(type_4) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+//    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
+//    if (rest_2 != BVal(true)) newsubst.get.setConcrete()
     // 6 - apply the new substitution to the previous type and eval
-    Eval.instantiate(newsubst.get(typev))
+    Eval.instantiate(subst_2.get(type_4))
   }
 
   /**
@@ -173,35 +191,36 @@ object DSL {
     try{
       println(Show(c))
       // 1 - build derivation tree
-      val oldtyp = TypeCheck.check(c)
-      println(s" - type-rules:    $oldtyp")
+      val type_1 = TypeCheck.check(c)
+      println(s" - type-rules:    $type_1")
       // 2 - unify constraints and get a substitution
-      val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
+      val (subst,rest) = Unify.getUnification(type_1.const,type_1.args.vars)
       println(s" - [ unification: $subst ]")
-      println(s" - [ missing:     ${Show(rest)} ]")
+      println(s" - [ missing (ign):     ${Show(rest)} ]")
       // 3 - apply substitution to the type
-      val tmptyp = subst(oldtyp)
-      println(s" - substituted:   $tmptyp")
-      val newrest = subst.getConstBoundedVars(oldtyp)
-      val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
-      println(s" - extended:      $typ")
+      val type_2 = subst(type_1)
+      println(s" - substituted:   $type_2")
+      val newrest = subst.getConstBoundedVars(type_1)
+      println(s" - [ missing:     ${Show(newrest)} ]")
+      val type_3 = Type(type_2.args,type_2.i,type_2.j,type_2.const & newrest,type_2.isGeneral)
+      println(s" - extended:      $type_3")
       // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
-      val typev = Simplify(typ)
-      println(s" - simplified:    $typev")
+      val type_4 = Simplify(type_3)
+      println(s" - simplified:    $type_4")
       // 5 - solve rest of the constraints
       //val newsubst = Solver.solve(typev.const)
-      val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+      val newsubst = Solver.solve(type_4) // EXPERIMENTAL: smarter way to annotate types with "concrete".
       if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
       if (newrest != BVal(true)) newsubst.get.setConcrete()
       println(s" - [ solution:    $newsubst ]")
       // 6 - apply the new substitution to the previous type and eval
-      val concr = newsubst.get(typev)
-      val newrest2 = newsubst.get.getConstBoundedVars(concr)
-      val concr2 = Eval(Type(concr.args,concr.i,concr.j,concr.const & newrest2,concr.isGeneral))
-      println(s" - post-solver:   $concr2")
+      val type_5 = newsubst.get(type_4)
+      val newrest2 = newsubst.get.getConstBoundedVars(type_5)
+      val type_6 = Eval(Type(type_5.args,type_5.i,type_5.j,type_5.const & newrest2,type_5.isGeneral))
+      println(s" - post-solver:   $type_6")
       // 7 - apply the new substitution to the previous type and eval
-      val inst = Eval.instantiate(newsubst.get(typev))
-      println(s" - instantiation: $inst")
+      val type_5b = Eval.instantiate(newsubst.get(type_4))
+      println(s" - instantiation: $type_5b")
       // 8 - show final type
       println(" : "+Show(typeOf(c)))
     }
@@ -209,6 +228,80 @@ object DSL {
       case e:TypeCheckException => println(s" ! type checking error: ${e.getMessage}")
       case x : Throwable => throw x
     }
+  }
+
+  /**
+    * Type check a connector (build tree, unify, and solve constraints), and print all intermediate results
+    * @param c connector to be type-checked
+    * @return the type of the connector - return a concrete type if one is found, otherwise the general one
+    */
+  def debug2(c:Connector): Unit = {
+    try{
+      println(Show(c))
+      // 1 - build derivation tree
+      val type_1 = TypeCheck.check(c)
+      println(s" - type-rules:    $type_1")
+      // 2 - unify constraints and get a substitution
+      val (subst_1,rest_1) = Unify.getUnification(type_1.const,type_1.args.vars)
+      println(s" - [ unification: $subst_1 ]")
+      println(s" - [ missing:     ${Show(rest_1)} ]")
+      // 3 - apply substitution to the type
+      val rest_2 = subst_1(rest_1)
+      val type_2b = Type(type_1.args,subst_1(type_1.i),subst_1(type_1.j),rest_2,type_1.isGeneral)
+      println(s" - substituted:   $type_2b")
+      // 4 - extend with lost constraints over argument-variables
+      val rest_3 = subst_1.getConstBoundedVars(type_2b)
+      val type_3 = Type(type_2b.args,type_2b.i,type_2b.j,rest_2 & rest_3,type_2b.isGeneral)
+      println(s" - extended with: $rest_3")
+      // 4 - evaluate and simplify type
+      val type_4 = Simplify(type_3)
+      println(s" - simplified:    $type_4")
+      // 5 - solve constraints
+      val subst_2 = Solver.solve(type_4)
+      if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
+      if (rest_3 != BVal(true)) subst_2.get.setConcrete()
+      println(s" - [ solution:    $subst_2 ]")
+      // 6 - apply subst_2
+      val type_5 = subst_2.get(type_4)
+      val rest_4 = subst_2.get.getConstBoundedVars(type_5)
+      println(s" - extended with: $rest_4")
+      val type_6 = Eval(Type(type_5.args,type_5.i,type_5.j,type_5.const & rest_4,type_5.isGeneral))
+      println(s" - post-solver:   $type_6")
+      // 7 - apply the new substitution to the previous type and eval
+      val type_5b = Eval.instantiate(subst_2.get(type_4))
+      println(s" - instantiation: $type_5b")
+      // 8 - show final type
+      println(" : "+Show(typeOf(c)))
+    }
+    catch {
+      case e:TypeCheckException => println(s" ! type checking error: ${e.getMessage}")
+      case x : Throwable => throw x
+    }
+  }
+
+
+  /**
+    * Checks if a connector type checks, using typeOf
+    * @param c connector to type check
+    * @return
+    */
+  def typeChecks(c:Connector): Boolean = try {
+    typeOf(c)
+    true
+  }
+  catch {
+    case _:TypeCheckException => false
+    case e: Throwable => throw e
+  }
+
+  /**
+    * Checks if a given connector has parameters (i.e., it is a family)
+    * @param c
+    * @return
+    */
+  def isFamily(c:Connector): Boolean = {
+    val typ = TypeCheck.check(c)
+    typ.args.vars.nonEmpty
   }
 
   /**

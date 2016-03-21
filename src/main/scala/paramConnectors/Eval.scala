@@ -189,21 +189,23 @@ object Eval {
     // 1 - build derivation tree
     val type_1 = TypeCheck.check(c)
     // 2 - unify constraints and get a substitution
-    val (subst_1,rest) = Unify.getUnification(type_1.const,type_1.args.vars)
+    val (subst_1,rest_1) = Unify.getUnification(type_1.const,type_1.args.vars)
     // 3 - apply substitution to the type
-    val type_2 = subst_1(type_1)
-    val newrest = subst_1.getConstBoundedVars(type_1)
-    val type_3 = Type(type_2.args,type_2.i,type_2.j,type_2.const & newrest,type_2.isGeneral)
-    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
-    val type_ = Simplify(type_3)
-    // 5 - solve rest of the constraints
-    val subst_2 = Solver.solve(type_) // EXPERIMENTAL: smarter way to annotate types with "concrete".
+    val rest_2 = subst_1(rest_1)
+    val type_2b = Type(type_1.args,subst_1(type_1.i),subst_1(type_1.j),rest_2,type_1.isGeneral)
+    // 4 - extend with lost constraints over argument-variables
+    val rest_3 = subst_1.getConstBoundedVars(type_2b)
+    val type_3 = Type(type_2b.args,type_2b.i,type_2b.j,rest_2 & rest_3,type_2b.isGeneral)
+    // 4.1 - evaluate and simplify type
+    val type_4 = Simplify(type_3)
+    // 5 - solve constraints
+    val subst_2 = Solver.solve(type_4)
     if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
-    var subst = subst_1 ++ subst_2.get
-    if (newrest != BVal(true)) subst.setConcrete()
+    var subst = subst_2.get //subst_1 ++ subst_2.get
+    if (rest_3 != BVal(true)) subst.setConcrete()
 
     var res = c
-    for (a <- type_.args.vars){
+    for (a <- type_4.args.vars){
       var (expr,subst_) = subst.pop(a)
       subst = subst_
       expr match {
@@ -219,47 +221,9 @@ object Eval {
   }
 
   /**
-    * Finds an instance of the connector, and removes applications, lambdas, and restrictions
+    * Finds an instance of the connector, and simplifies it
     * @param c connector to be reduced
-    * @return rediced connector
+    * @return reduced connector
     */
-  def reduce(c:Connector): Connector = reduceAux(instantiate(c))
-  private def reduceAux(con:Connector): Connector = {
-    con match {
-      case Seq(c1, c2) => Seq(reduceAux(c1), reduceAux(c2))
-      case Par(c1, c2) => Par(reduceAux(c1), reduceAux(c2))
-      case Trace(i, c) => Trace(i, reduceAux(c))
-      case Exp(a, c) => Exp(a, reduceAux(c))
-      case ExpX(x, a, c) => ExpX(x, a, reduceAux(c))
-      case Choice(b, c1, c2) => Choice(b, reduceAux(c1), reduceAux(c2))
-      case IAbs(x, c) => IAbs(x, reduceAux(c))
-      case BAbs(x, c) => BAbs(x, reduceAux(c))
-      case IApp(c, a) => reduceApp(reduceAux(c), a).getOrElse(throw new TypeCheckException(s"failed to apply $a to $c"))
-      case BApp(c, b) => reduceApp(reduceAux(c), b).getOrElse(throw new TypeCheckException(s"failed to apply $b to $c"))
-      case Restr(c, phi) => reduceAux(c)
-      case _ => con
-    }
-  }
-  private def reduceApp(con:Connector,e:Expr): Option[Connector] = {
-    con match {
-      case Seq(c1, c2) =>
-        val t1 = for (c11 <- reduceApp(c1, e)) yield Seq(c11, c2)
-        t1.orElse(for (c21 <- reduceApp(c2, e)) yield Seq(c1, c21))
-      case Par(c1, c2) =>
-        val t1 = for (c11 <- reduceApp(c1, e)) yield Par(c11, c2)
-        t1.orElse(for (c21 <- reduceApp(c2, e)) yield Par(c1, c21))
-      case Trace(i, c) => for (c1 <- reduceApp(c, e)) yield Trace(i, c1)
-      case Exp(a, c) => for (c1 <- reduceApp(c, e)) yield Exp(a, c1)
-      case ExpX(x, a, c) => for (c1 <- reduceApp(c, e)) yield ExpX(x, a, c1)
-      case Choice(b, c1, c2) =>
-        val t1 = for (c11 <- reduceApp(c1, e)) yield Choice(b, c11, c2)
-        t1.orElse(for (c21 <- reduceApp(c2, e)) yield Choice(b, c1, c21))
-      case IAbs(x, c) if e.isInstanceOf[IExpr] => Some(Substitution(x, e.asInstanceOf[IExpr])(c))
-      case BAbs(x, c) if e.isInstanceOf[BExpr] => Some(Substitution(x, e.asInstanceOf[BExpr])(c))
-      case IApp(c, a) => for (c1 <- reduceApp(c, e)) yield IApp(c1, a)
-      case BApp(c, b) => for (c1 <- reduceApp(c, e)) yield BApp(c1, b)
-      case Restr(c, phi) => for (c1 <- reduceApp(c, e)) yield Restr(c1, phi)
-      case _ => None
-    }
-  }
+  def reduce(c:Connector): Connector = Simplify(instantiate(c))
 }

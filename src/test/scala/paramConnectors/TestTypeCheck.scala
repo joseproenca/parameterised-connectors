@@ -70,7 +70,7 @@ class TestTypeCheck {
       "© 0 -> 0")
     testOK(lam(y, (id^x)^x<--y),
       "∀y:I . x1 -> x2 | (x1 == Σ{0 ≤ x < y}x) & (x2 == Σ{0 ≤ x < y}x) & (x1 >= 0) & (x2 >= 0)",
-      "∀y:I . x1 -> x2 | (y == ((y * y) + (-2 * x1))) & (y == ((y * y) + (-2 * x2))) & (x1 >= 0) & (x2 >= 0)",
+      "∀y:I . x1 -> x2 | (y == ((-2 * x1) + (y * y))) & (y == ((-2 * x2) + (y * y))) & (x1 >= 0) & (x2 >= 0)",
       "© 0 -> 0")
     testOK(lam(y, (id^x)^x<--y) (3),
       "x1 -> x2 | (x1 == Σ{0 ≤ x < 3}x) & (x2 == Σ{0 ≤ x < 3}x) & (x1 >= 0) & (x2 >= 0)",
@@ -78,8 +78,8 @@ class TestTypeCheck {
       "3 -> 3")
     testOK ( lam(x,Tr(x,id^3)) ,
       "∀x:I . x1 -> x2 | ((x1 + x) == (1 * 3)) & ((x2 + x) == (1 * 3)) & (x1 >= 0) & (x2 >= 0)",
-      "∀x:I . (-1 * x) + 3 -> 3 + (-1 * x) | (((-1 * x) + 3) >= 0) & ((3 + (-1 * x)) >= 0)",
-      "© 0 -> 0")
+      "∀x:I . (-1 * x) + 3 -> 3 + (-1 * x) | ((-1 * x) + 3) >= 0",
+      "© 3 -> 3")
 
     // conditionals
     testOK( lam("a":B, "a" ? id + dupl) ,
@@ -181,45 +181,45 @@ class TestTypeCheck {
   }
 
 
-  private def testOK(c:Connector,typString:String,evalType:String,concType:String) {
+  private def testOK(c:Connector,typString:String,evalType:String,concType:String): Unit = {
     println(Show(c))
     // 1 - build derivation tree
-    val oldtyp = TypeCheck.check(c)
-    println(" - type(pre-subst): "+Show(oldtyp))
-    println(" - simplified cnst: "+Show(Simplify(oldtyp.const)))
+    val type_1 = TypeCheck.check(c)
+    println(s" - type-rules:    $type_1")
     // 2 - unify constraints and get a substitution
-    val (subst,rest) = Unify.getUnification(oldtyp.const,oldtyp.args.vars)
-    println(" - [ subst:  "+subst+" ]")
-    println(" - [ rest:   "+Show(rest)+" ]")
+    val (subst_1,rest_1) = Unify.getUnification(type_1.const,type_1.args.vars)
+    println(s" - [ unification: $subst_1 ]")
+    println(s" - [ missing:     ${Show(rest_1)} ]")
     // 3 - apply substitution to the type
-    val tmptyp = subst(oldtyp)
-//    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,oldtyp.const,tmptyp.isGeneral)
-    // 3.1 - recall constraints concerning bounded variables
-    val newrest = subst.getConstBoundedVars(oldtyp)
-    val typ = Type(tmptyp.args,tmptyp.i,tmptyp.j,tmptyp.const & newrest,tmptyp.isGeneral)
-    println(" - type(pos-subst): "+Show(typ))
-    // 4 - evaluate (simplify) resulting type (eval also in some parts of the typecheck).
-    val typev = Simplify(typ)
-    println(" - type(pos-eval) : "+Show(typev))
-    // 5 - solve rest of the constraints
-    //    val newsubst = Solver.solve(typev.const)
-    val newsubst = Solver.solve(typev)
-    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-    if (newrest != BVal(true)) newsubst.get.setConcrete()
-    println(" - [ subst2: "+newsubst+" ]")
-    // 6 - apply the new substitution to the previous type and eval
-//    val tmptypev2 = Eval(newsubst.get(typev))
-//    val typev2 = Type(Arguments,tmptypev2.i,tmptypev2.j,tmptyp.const,tmptypev2.isGeneral)
-    val typev2 = Eval.instantiate(newsubst.get(typev))
-    println(" - type(pos-solv) : "+Show(typev2))
-    // print and check
-    // println(" - rest(eval-alws): "+show(rest))
-//    println(" - original   const: "+Show(        (oldtyp.const)))
-    // println(" - solve!: "+typev.const+"\n --"+Solver.solve(typev.const))
-    // println(" - apply unif: "+(subst(typ)))
-    assertEquals(typString,Show(oldtyp)) // type after derivation tree, before unification
-    assertEquals(evalType,Show(typev))   // type after substituting based on unification and evaluating
-    assertEquals(concType,Show(typev2))  // type after constraint solving and evaluating
+    val rest_2 = subst_1(rest_1)
+    val type_2 = Type(type_1.args,subst_1(type_1.i),subst_1(type_1.j),rest_2,type_1.isGeneral)
+    println(s" - substituted:   $type_2")
+    // 4 - extend with lost constraints over argument-variables
+    val rest_3 = subst_1.getConstBoundedVars(type_2)
+    val type_3 = Type(type_2.args,type_2.i,type_2.j,rest_2 & rest_3,type_2.isGeneral)
+    println(s" - extended with: $rest_3")
+    // 4 - evaluate and simplify type
+    val type_4 = Simplify(type_3)
+    println(s" - simplified:    $type_4")
+    // 5 - solve constraints
+    val subst_2 = Solver.solve(type_4)
+    if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
+    if (rest_3 != BVal(true)) subst_2.get.setConcrete()
+    println(s" - [ solution:    $subst_2 ]")
+    // 6 - apply subst_2
+    val type_5 = subst_2.get(type_4)
+    val rest_4 = subst_2.get.getConstBoundedVars(type_5)
+    println(s" - extended with: $rest_4")
+    val type_6 = Eval(Type(type_5.args,type_5.i,type_5.j,type_5.const & rest_4,type_5.isGeneral))
+    println(s" - post-solver:   $type_6")
+    // 7 - apply the new substitution to the previous type and eval
+    val type_5b = Eval.instantiate(subst_2.get(type_4))
+    println(s" - instantiation: $type_5b")
+    // test asserts
+    assertEquals(typString,Show(type_1)) // type after derivation tree, before unification
+    assertEquals(evalType,Show(type_4))  // type after substituting based on unification and evaluating
+    assertEquals(concType,Show(type_5b)) // type after constraint solving and evaluating
+
   }
   
   private def testTypeError(c:Connector) = try {

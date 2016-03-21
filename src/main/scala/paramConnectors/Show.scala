@@ -4,7 +4,9 @@ object Show {
   def apply(con: Connector): String = con match {
     case Seq(c1, c2)    => s"${showP(c1)} ; ${showP(c2)}"
     case Par(c1, c2)    => s"${showP(c1)} ⊗ ${showP(c2)}"
-    case Id(_)          => "id"
+    case Id(Port(IVal(1))) => "id"
+    case Id(Port(IVal(0))) => "nil"
+    case Id(x)          => s"Id(${apply(x)})"
     case Symmetry(i, j) => s"sym(${apply(i)},${apply(j)})"
     case Trace(i, c)    => s"Tr_${showP(i)}{${apply(c)}}"
     case Prim(name,_,_) => name

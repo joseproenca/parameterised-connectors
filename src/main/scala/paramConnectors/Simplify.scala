@@ -248,7 +248,7 @@ object Simplify {
     if (a == 0) return b
     while (b != 0) {
       if (a > b)  a = a - b
-      else        b = b - a;
+      else        b = b - a
     }
     a
   }
@@ -261,6 +261,72 @@ object Simplify {
         res = gcd(res, i)
       }
       res
+    }
+  }
+
+
+  /**
+    * Simplify a (family of) connector(s) by applying simple connector equalities.
+    * It assumes the connector is well-typed
+    * @param con connector to be simplified
+    * @return simplified connector
+    */
+  def apply(con:Connector): Connector = con match {
+    case Seq(c1,c2) => (apply(c1),apply(c2)) match {
+      case (Id(_), cc2) if !DSL.isFamily(cc2) => cc2
+      case (cc1, Id(_)) if !DSL.isFamily(cc1) => cc1
+      case (cc1,cc2) => Seq(cc1,cc2)
+    }
+    case Par(c1,c2) => (apply(c1),apply(c2)) match {
+      case (Id(Port(IVal(0))), cc2) => cc2
+      case (cc1, Id(Port(IVal(0)))) => cc1
+      case (cc1,cc2) => Par(cc1,cc2)
+    }
+    case Id(i) => con
+    case Symmetry(i,j) => (apply(i),apply(j)) match {
+      case (Port(IVal(0)),j2) => Id(j2)
+      case (i2,Port(IVal(0))) => Id(i2)
+      case (i2,j2) => Symmetry(i2,j2)
+    }
+    case Trace(i,c) => apply(i) match {
+      case Port(IVal(0)) => apply(c)
+      case i2 => Trace(i2,apply(c))
+    }
+    case Prim(name, i, j) => con
+    case Exp(a, c) => Eval(a) match {
+      case IVal(v) if v<1  => Id(Port(IVal(0)))
+      case IVal(v) => apply(Par(c,Exp(IVal(v-1),c)))
+      case n => Exp(n,apply(c))
+    }
+    case ExpX(x, a, c) => Eval(a) match {
+      case IVal(v) if v<1 => Id(Port(IVal(0)))
+      case IVal(v) => apply(Par(ExpX(x,IVal(v-1),c),Substitution(x,IVal(v-1))(c)))
+      case n => ExpX(x,n,apply(c))
+    }
+    case Choice(b, c1, c2) => Eval(b) match {
+      case BVal(true) => apply(c1)
+      case BVal(false) => apply(c2)
+      case b2 => Choice(b,apply(c1),apply(c2))
+    }
+    case IAbs(x, c) => IAbs(x,apply(c))
+    case BAbs(x, c) => BAbs(x,apply(c))
+    case IApp(c,a) => (apply(c),apply(a)) match {
+      case (IAbs(x,c2),a2) => apply(Substitution(x,a2)(c2))
+      case (Seq(c1,c2),a2) =>
+        if (DSL.typeChecks(IApp(c1,a2))) apply(Seq(IApp(c1,a2),c2))
+        else apply(Seq(c1,IApp(c2,a2)))
+      case (Par(c1,c2),a2) =>
+        if (DSL.typeChecks(IApp(c1,a2))) apply(Par(IApp(c1,a2),c2))
+        else apply(Par(c1,IApp(c2,a2)))
+      case (c2,a2) => IApp(c2,a2)
+    }
+    case BApp(c,a) => (apply(c),apply(a)) match {
+      case (BAbs(x,c2),a2) => apply(Substitution(x,a2)(c2))
+      case (c2,a2) => BApp(c2,a2)
+    }
+    case Restr(c, phi) => (apply(c),Eval(phi)) match{
+      case (c2,BVal(true)) => c2
+      case (c2,phi2) => Restr(c,phi2)
     }
   }
 
