@@ -34,6 +34,13 @@ object DSL {
   val dupl = Prim("dupl",1,one*one)
   val merger = Prim("merger",one*one,1)
   val drain = Prim("drain",one*one,0)
+  def writer(l:List[Any]) = Prim("writer",0,1,Some(l))
+  def reader(n:Int) = Prim("reader",1,0,Some(n))
+
+  // examples of connectors
+  val alternator = dupl*dupl & id*drain*fifo & merger
+  val exrouter = dupl & dupl*id & (lossy*lossy & dupl*dupl & id*swap*id & id*id*merger)*id & id*id*drain
+  val fifos = dupl & fifo*fifo
 
   def seq(i:Interface, c:Connector, x:I, n:IExpr) =
     Trace(Repl(i,n-1), (c^(x<--n)) & sym(Repl(i,n-1),i) ) | n>0
@@ -42,6 +49,24 @@ object DSL {
 
   // included for the demo at FACS'15
   val x="x":I; val y="y":I; val z="z":I; val n="n":I; val b="b":B; val c="c":B;
+
+
+  // methods to execute a connector //
+  /**
+    * Compile a connector to [[picc]] and execute it until no behaviour is found.
+    * @param c connector to be compiled and executed
+    */
+  def run(c:Connector) = Compile(c).run()
+
+  /**
+    * Compile a connector to [[picc]] and try to perform a given number of steps.
+    * @param c connector to be compiled and executed
+    * @param steps number of steps to execute
+    */
+  def run(c:Connector,steps:Int): Unit = {
+    val con = Compile(c)
+    for (i <- 0 until steps) con.doStep
+  }
 
   // overall methods to typecheck
   /**

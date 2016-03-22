@@ -278,8 +278,11 @@ object Simplify {
       case (cc1,cc2) => Seq(cc1,cc2)
     }
     case Par(c1,c2) => (apply(c1),apply(c2)) match {
-      case (Id(Port(IVal(0))), cc2) => cc2
+      case (Par(c1a,c2a),cc2) => apply(Par(c1a,Par(c2a,cc2))) // group on the right
+      case (Id(Port(IVal(0))), cc2) => cc2 // drop id_0
       case (cc1, Id(Port(IVal(0)))) => cc1
+      case (Id(Port(IVal(n1))), Id(Port(IVal(n2)))) => Id(Port(IVal(n1+n2))) // merge id*id
+      case (Id(Port(IVal(n1))), Par(Id(Port(IVal(n2))),cc2)) => apply(Par(Id(Port(IVal(n1+n2))),cc2))
       case (cc1,cc2) => Par(cc1,cc2)
     }
     case Id(i) => con
@@ -292,7 +295,7 @@ object Simplify {
       case Port(IVal(0)) => apply(c)
       case i2 => Trace(i2,apply(c))
     }
-    case Prim(name, i, j) => con
+    case Prim(_,_,_,_) => con
     case Exp(a, c) => Eval(a) match {
       case IVal(v) if v<1  => Id(Port(IVal(0)))
       case IVal(v) => apply(Par(c,Exp(IVal(v-1),c)))

@@ -1,58 +1,18 @@
-package paramConnectors.run
+package paramConnectors
 
 import paramConnectors.TypeCheck.TypeCheckException
-import paramConnectors._
-import picc.connectors
 import picc.connectors.Primitive
 import picc.connectors.constraints.Constraint
 import picc.connectors.primitives._
-import sun.invoke.empty.Empty
 
 /**
+  * EXPERIMENTAL (and still buggy)
+  * Convert a (family of) connector(s) to a runnable connector,
+  * building an instance of a connector in [[picc]].
+  *
   * Created by jose on 04/03/16.
   */
-object DSL {
-  // goal: to write "fifo" * id & id^2
-  implicit def str2conn(s:String): Connector = Prim(s,1,1)
-  implicit def str2IVar(s:String): IVar = IVar(s)
-  implicit def str2BVar(s:String): BVar = BVar(s)
-  implicit def bool2BExp(b:Boolean): BExpr= BVal(b)
-  implicit def int2IExp(n:Int): IExpr= IVal(n)
-  implicit def int2Interface(n:Int): Interface = Port(IVal(n))
-  implicit def exp2Interface(e:IExpr): Interface= Port(e)
-
-  type I  = IVar // write "x":I
-  type B = BVar  // write "b":B
-  type Itf = Interface // write 2:Itf
-  def lam(x:I,c:Connector) = IAbs(x,c)
-  def lam(x:B,c:Connector) = BAbs(x,c)
-  def not(b:BExpr) = Not(b)
-
-  val sym  = Symmetry
-  val Tr   = Trace
-  val Prim = paramConnectors.Prim
-
-  val swap = Symmetry(1,1)
-  val id = Id(1)
-  val nil = Id(0)
-  val fifo = Prim("fifo",1,1)
-  val lossy = Prim("lossy",1,1)
-  val dupl = Prim("dupl",1,2)
-  val merger = Prim("merger",2,1)
-  val drain = Prim("drain",2,0)
-  val writer = Prim("writer",0,1)
-  val reader = Prim("reader",1,0)
-
-  def seq(i:Interface, c:Connector, x:I, n:IExpr) =
-    Trace(Repl(i,n-1), (c^(x<--n)) & sym(Repl(i,n-1),i) ) | n>0
-  def seq(i:Interface, c:Connector, n:IExpr) =
-    Trace(Repl(i,n-1), (c^n) & sym(Repl(i,n-1),i) ) | n>0
-
-  // examples of connectors
-  val alternator = dupl & dupl*dupl & id*drain*fifo & merger
-  val fifos = dupl & fifo*fifo
-
-
+object Compile {
   /**
     * Generates a primitive in [[picc]] based on the name and arity of a primitive
     * in [[paramConnectors]].
@@ -61,42 +21,44 @@ object DSL {
     * @param out name of output ports
     * @return runnable primitive in [[picc]]
     */
-  def genPrimitive(p:String,in:List[String],out:List[String]): Primitive = {
-    println(s"$p: [${in.mkString(",")}] -> [${out.mkString(",")}]")
-    (p, in.size, out.size) match {
-    case ("fifo",1,1) => new Fifo(in.head,out.head)
-    case ("lossy",1,1) => new Lossy(in.head,out.head)
-    case ("dupl",1,2) => new Sync(in.head,out.head) ++ new Sync(in.head,out.tail.head)
-    case ("merger",2,1) => new NMerger(in,out.head)
-    case ("drain",2,0) => new SDrain(in.head,in.tail.head)
-    case ("writer",0,1) => new Writer(out.head,List("data"))
-    case ("reader",0,1) => new Reader(in.head,-1)
-    case (_,i,j) => throw new RuntimeException(s"Primitive not found: $p:$in->$out")
+  def genPrimitive(p:String,in:List[String],out:List[String],extra:Option[Any]): Primitive = {
+//    println(s"$p: (${in.mkString(",")}) -> (${out.mkString(",")})")
+    (p, in.size, out.size,extra) match {
+    case ("fifo",1,1,_) => new Fifo(in.head,out.head)
+    case ("lossy",1,1,_) => new Lossy(in.head,out.head)
+    case ("dupl",1,2,_) => new Sync(in.head,out.head) ++ new Sync(in.head,out.tail.head)
+    case ("merger",2,1,_) => new NMerger(in,out.head)
+    case ("drain",2,0,_) => new SDrain(in.head,in.tail.head)
+    case ("writer",0,1,Some(l:List[Any])) => new Writer(out.head,l)
+    case ("reader",1,0,Some(n:Int)) => new Reader(in.head,n)
+    case (_,_,_,_) => throw new RuntimeException(s"Primitive not found: $p:$in->$out")
   }}
 
 
   /**
-    * EXPERIMENTAL (and still buggy)
+    * EXPERIMENTAL
     * Convert a (family of) connector(s) to a runnable connector,
     * using the primitives defined by [[genPrimitive]]
     * @param con connector used to generate a running object
     * @return a running connector in PICC
     */
-  def toPicc(con:Connector): Primitive = toPicc(Eval.reduce(con),0,List())._1
+  def apply(con:Connector): Primitive = toPicc(Eval.reduce(con),0,List())._1
 
   /**
-    * EXPERIMENTAL (and still buggy)
+    * EXPERIMENTAL
     * Given a parameterised connector, it creates a concrete instance of it
     * (i.e., no abstractions, lambdas, nor restrictions)
     * and produces a PICC connector (with concrete variable names).
     * Uses an intermediate structure with a list of inputs and a list of outputs.
     */
-  private def toPicc(con:Connector,seed:Int,inp:List[String]):(Primitive,Int,List[String],List[String]) = con match {
+  private def toPicc(con:Connector,seed:Int,inp:List[String]):(Primitive,Int,List[String],List[String]) = {
+//    println(s"toPicc $con, $seed, (${inp.mkString(",")})")
+    con match {
   //  def toPicc(c:Connector,seedIn:String="",seedOut:String): Primitive = c match {
     case Seq(con1, con2) =>
       val (c1,seed1,inp1,out1) = toPicc(con1,seed,inp) // inp1 should be empty
       val (c2,seed2,inp2,out2) = toPicc(con2,seed1,out1)
-      if (inp1.nonEmpty || inp2.nonEmpty) errorNotInst(con)
+//      if (inp1.nonEmpty || inp2.nonEmpty) errorNotInst(con)
       (c1++c2,seed2,inp1++inp2,out2)
     case Par(con1, con2) =>
       val (c1,seed1,inp1,out1) = toPicc(con1,seed,inp)
@@ -136,7 +98,7 @@ object DSL {
         }
       case _ => errorNotInst(con)
     }
-    case Prim(name, i, j) => (Eval(i),Eval(j)) match {
+    case Prim(name, i, j, ex) => (Eval(i),Eval(j)) match {
       case (Port(IVal(ni)), Port(IVal(nj))) =>
         var in:List[String] = inp.take(ni)
         var out = List[String]()
@@ -149,7 +111,7 @@ object DSL {
           out ::= "p" + s
           s +=1
         }
-        (genPrimitive(name, in, out),s,List(),out)
+        (genPrimitive(name, in, out, ex),s,inp.drop(ni),out)
       case _ => errorNotInst(con)
     }
 //    case Exp(a, c) => Eval(a) match {
@@ -186,7 +148,7 @@ object DSL {
 //    case BApp(c, b) => throw new TypeCheckException("Failed to run application: "+Show(c))
 //    case Restr(c, phi) => throw new TypeCheckException("Failed to run restriction: "+Show(c))
     case _ => errorNotInst(con)
-  }
+  }}
 
   /// Auxiliary functions for toPicc ///
   private def errorNotInst(c:Connector) =

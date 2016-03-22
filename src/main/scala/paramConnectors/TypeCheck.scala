@@ -101,7 +101,7 @@ object TypeCheck {
                        EQ(interfaceSem(y * i), interfaceSem(j1)) &
                        nonZero(x,y) &
                        phi, isG)
-    case Prim(name,i,j) =>
+    case Prim(name,i,j,_) =>
       check(gamma,Utils.interfaceSem(i))
       check(gamma,Utils.interfaceSem(j))
       Type(Arguments(), i, j, nonZero(i,j), isGeneral=true)

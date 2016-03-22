@@ -157,7 +157,7 @@ class Substitution(private val items:List[Item]) {
     case Id(i) => Id(subst(it,i))
     case Symmetry(i, j) => Symmetry(subst(it,i),subst(it,j))
     case Trace(i, c) => Trace(subst(it,i),subst(it,c))
-    case Prim(name, i, j) => Prim(name,subst(it,i),subst(it,j))
+    case Prim(name, i, j,e) => Prim(name,subst(it,i),subst(it,j),e)
     case Exp(a, c) =>  Exp(subst(it,a),subst(it,c))
     case ExpX(x, a, c) => it match {
       case IItem(`x`, e) => ExpX(x,subst(it,a),c)
