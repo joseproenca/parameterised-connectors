@@ -28,11 +28,13 @@ class TestReduce {
   @Test def TestReductions() {
     testOK(fifo ^ 3, "fifo ⊗ (fifo ⊗ fifo)")
     testOK(seqfifo,"fifo")
-    testOK(zip,"id ⊗ id")
+    //    testOK(zip,"Id(2)")
+    testOK(zip(1),"Id(2)")
     testOK(lam(n,lam(x,id^x)),"id")
     testOK(lam(x,id^x) & lam(y,id^y),"nil")
     testOK(lam(n,lam(x,id^x) & lam(y,id^y)),"nil")
-    testOK(sequencer,"((dupl ; (id ⊗ id)) ⊗ Tr_1{(fifo ; dupl) ; (id ⊗ id)}) ; (id ⊗ ((id ⊗ id) ; drain))")
+    testOK(sequencer,"(dupl ⊗ Tr_1{fifo ; dupl}) ; (id ⊗ drain)")
+    // (dupl ⊗ Tr_1{fifo ; dupl}) ; (id ⊗ drain)
   }
 
   @Test def TestInstantiate(): Unit = {

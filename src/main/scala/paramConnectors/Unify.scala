@@ -45,11 +45,12 @@ object Unify {
     case And((ge@GE(_,_))::exps) => getUnification(And(exps),rest & ge,bounded)
     case And((le@LE(_,_))::exps) => getUnification(And(exps),rest & le,bounded)
     case And((nt@Not(_))::exps)  => getUnification(And(exps),rest & nt,bounded)
+    case And((an@AndN(_,_,_,_))::exps)  => getUnification(And(exps),rest & an,bounded)
     //
     case And(And(e1)::exps) => getUnification(And(e1:::exps),rest,bounded)
     case And(Nil) => (Substitution(),rest)
     //
-    case _:BVal | _:BVar | _:EQ | _:GT | _:LT | _:Or | _:Not =>
+    case _:BVal | _:BVar | _:EQ | _:GT | _:LT | _:GE | _:LE | _:Or | _:Not | _:AndN =>
       getUnification(And(const :: Nil), rest,bounded)
   }
 

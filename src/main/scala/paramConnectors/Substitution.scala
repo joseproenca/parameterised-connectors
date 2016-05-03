@@ -126,6 +126,10 @@ class Substitution(private val items:List[Item]) {
     case And(es)     => And(es.map(subst(i,_)))
     case Or(e1, e2)  => Or(subst(i,e1),subst(i,e2))
     case Not(e1)     => Not(subst(i,e1))
+    case AndN(x,f,t,e) => i match {
+      case BItem(`x`, e2) => exp // skip bound variable
+      case _ => AndN(x,subst(i,f),subst(i,t),subst(i,e))
+    }
   }
   // substitution in int expressions
   private def subst(i:Item,exp:IExpr): IExpr = exp match {

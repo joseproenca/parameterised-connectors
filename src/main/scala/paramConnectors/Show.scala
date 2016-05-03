@@ -73,6 +73,7 @@ object Show {
     case And(es)     => es.map(showP).mkString(" & ")
     case Or(e1, e2)  => s"${showP(e1)} | ${showP(e2)}"
     case Not(e1)     => s"!${showP(e1)}"
+    case AndN(x,f,t,e) => s"∧{${apply(f)} ≤ ${x.x} < ${apply(t)}}${showP(e)}"
   }
   private def showP(exp:BExpr):String = exp match {
     case BVal(_) | BVar(_) => apply(exp)

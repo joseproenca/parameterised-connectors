@@ -130,8 +130,17 @@ object Simplify {
     case LT(e1, e2) => optimiseIneq(e1,e2,LT) //LT(apply(e1),apply(e2))
     case GE(e1, e2) => optimiseIneq(e1,e2,GE) //GE(apply(e1),apply(e2))
     case LE(e1, e2) => optimiseIneq(e1,e2,LE) //LE(apply(e1),apply(e2))
+    case AndN(x,IVal(from),IVal(to),expr) =>
+      if (to>=from)
+        And((for (i<-from until to) yield Substitution(x,IVal(i))(simpAux(expr))).toList)
+      else BVal(true)
+    case AndN(x,from,to,expr) if !Utils.freeVars(expr).contains(x) => simpAux(expr)
+    case AndN(x,from,to,expr) if isLinearIneq(x,expr) =>
+      simpAux(Substitution(x,from)(expr)) & simpAux(Substitution(x,to-IVal(1))(expr))
+    case AndN(x,from,to,expr) => AndN(x,from,to,simpAux(expr))
   }
 
+  // drop coeficients from inequations when compared to 0.
   private def optimiseIneq(e1:IExpr,e2:IExpr,const:(IExpr,IExpr)=>BExpr): BExpr = {
     (apply(e1),apply(e2)) match {
       case (IVal(0),e3@Mul(_,_)) => const(IVal(0),reduceZ(e3))
@@ -148,17 +157,39 @@ object Simplify {
     case _ => e
   }
 
+  private def isLinearIneq(x:IVar,bExpr:BExpr): Boolean = bExpr match {
+    case And(es) => es.map(isLinearIneq(x,_)).forall(identity)
+    case EQ(e1, e2) => degree(x,e1)<=1 && degree(x,e2)<=1
+    case GT(e1, e2) => degree(x,e1)<=1 && degree(x,e2)<=1
+    case LT(e1, e2) => degree(x,e1)<=1 && degree(x,e2)<=1
+    case LE(e1, e2) => degree(x,e1)<=1 && degree(x,e2)<=1
+    case GE(e1, e2) => degree(x,e1)<=1 && degree(x,e2)<=1
+    case AndN(x2, from, to, e) =>
+      if (x == x2) true
+      else degree(x,from)<=1 && degree(x,to)<=1 && isLinearIneq(x,e)
+//    case BVal(b) =>
+//    case BVar(x) =>
+//    case Or(e1, e2) =>
+//    case Not(e) =>
+    case _ => false
+  }
+
+  /** returns the degree of an expression wrt a variable */
+  private def degree(x:Var, e:IExpr): Int = {
+    var degree = 0
+    for ((v,c) <- iexpr2lits(Eval(e)).lits.map)
+      degree = List(degree,v.multiplicity(x.x)).max
+    degree
+  }
+
   private def optimiseEq(optLits: OptLits): BExpr = {
     // rewrite sums with degree 1 (e.g., Sum_{x in ...} (2x + 3y^2 + 4))
     // by multiplying the average by the number occurrences.
     for (r <- optLits.rest) r match {
       case Sum(x,from,to,e) =>
-        val simpE    = iexpr2lits(Eval(e))
-        var degree = 0
-        for ((v,c) <- simpE.lits.map)
-          degree = List(degree,v.multiplicity(x.x)).max
+        val deg = degree(x,e)
 //        if (degree == 0) --> taken care by iexpr2lits
-        if (degree  == 1) {
+        if (deg  == 1) {
           val twicesum = (Substitution(x,to-IVal(1))(e) + Substitution(x,from)(e)) * (to - from)
 //          println(s"found degree 1: ${Show(r)} - simplifying ${Show(lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2))} == ${Show(IVal(0) - twicesum)}")
           return simpAux( lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2) === IVal(0) - twicesum )
@@ -297,7 +328,7 @@ object Simplify {
     }
     case Prim(_,_,_,_) => con
     case Exp(a, c) => Eval(a) match {
-      case IVal(v) if v<1  => Id(Port(IVal(0)))
+      case IVal(v) if v<1  => Id(Port(IVal(v)))
       case IVal(v) => apply(Par(c,Exp(IVal(v-1),c)))
       case n => Exp(n,apply(c))
     }
@@ -325,7 +356,15 @@ object Simplify {
     }
     case BApp(c,a) => (apply(c),apply(a)) match {
       case (BAbs(x,c2),a2) => apply(Substitution(x,a2)(c2))
+      case (Seq(c1,c2),a2) =>
+        if (DSL.typeChecks(BApp(c1,a2))) apply(Seq(BApp(c1,a2),c2))
+        else apply(Seq(c1,BApp(c2,a2)))
+      case (Par(c1,c2),a2) =>
+        if (DSL.typeChecks(BApp(c1,a2))) apply(Par(BApp(c1,a2),c2))
+        else apply(Par(c1,BApp(c2,a2)))
       case (c2,a2) => BApp(c2,a2)
+//      case (BAbs(x,c2),a2) => apply(Substitution(x,a2)(c2))
+//      case (c2,a2) => BApp(c2,a2)
     }
     case Restr(c, phi) => (apply(c),Eval(phi)) match{
       case (c2,BVal(true)) => c2

@@ -1,5 +1,7 @@
 package paramConnectors
 
+import java.util
+
 import paramConnectors.TypeCheck.TypeCheckException
 
 /**
@@ -21,7 +23,10 @@ object DSL {
   def lam(x:I,c:Connector) = IAbs(x,c)
   def lam(x:B,c:Connector) = BAbs(x,c)
   def not(b:BExpr) = Not(b)
-  
+
+  val xxx = new util.ArrayList[Int]()
+  xxx.add(1)
+
   val sym  = Symmetry
   val Tr   = Trace
   val Prim = paramConnectors.Prim
@@ -54,12 +59,14 @@ object DSL {
   // methods to execute a connector //
   /**
     * Compile a connector to [[picc]] and execute it until no behaviour is found.
+    *
     * @param c connector to be compiled and executed
     */
   def run(c:Connector) = Compile(c).run()
 
   /**
     * Compile a connector to [[picc]] and try to perform a given number of steps.
+    *
     * @param c connector to be compiled and executed
     * @param steps number of steps to execute
     */
@@ -71,7 +78,8 @@ object DSL {
   // overall methods to typecheck
   /**
    * Type check a connector (build tree, unify, and solve constraints)
-   * @param c connector to be type-checked
+    *
+    * @param c connector to be type-checked
    * @return the (general) type of the connector - if constraint solving gives a concrete type, return the general type instead.
    */
   def typeOf(c:Connector): Type = {
@@ -103,7 +111,8 @@ object DSL {
 
   /**
    * Type check a connector (build tree, unify, and solve constraints)
-   * @param c connector to be type-checked
+    *
+    * @param c connector to be type-checked
    * @return the type of the connector - return a concrete type if one is found, otherwise the general one
    */
   def typeInstance(c:Connector): Type = {
@@ -144,7 +153,8 @@ object DSL {
 
   /**
    * Type check a connector (build tree, unify, and solve constraints)
-   * @param c connector to be type-checked
+    *
+    * @param c connector to be type-checked
    * @return a substitution used applied to the derivation tree to get an instance of a type
    */
   def typeSubstitution(c:Connector): Substitution = {
@@ -178,7 +188,8 @@ object DSL {
 
   /**
    * Build the derivation tree of a connector (if it exists)
-   * @param c connector from which the tree is built
+    *
+    * @param c connector from which the tree is built
    * @return type representing the tree
    */
   def typeTree(c:Connector): Type = {
@@ -191,7 +202,8 @@ object DSL {
 
   /**
    * Type-check a connector just using unification (no constraint solving).
-   * @param c connector to be type-checked
+    *
+    * @param c connector to be type-checked
    * @return type after unification
    */
   def typeUnify(c:Connector): Type = {
@@ -209,7 +221,8 @@ object DSL {
 
   /**
    * Type check a connector (build tree, unify, and solve constraints), and print all intermediate results
-   * @param c connector to be type-checked
+    *
+    * @param c connector to be type-checked
    * @return the type of the connector - return a concrete type if one is found, otherwise the general one
    */
   def debug(c:Connector): Unit = {
@@ -257,6 +270,7 @@ object DSL {
 
   /**
     * Type check a connector (build tree, unify, and solve constraints), and print all intermediate results
+    *
     * @param c connector to be type-checked
     * @return the type of the connector - return a concrete type if one is found, otherwise the general one
     */
@@ -307,6 +321,7 @@ object DSL {
 
   /**
     * Checks if a connector type checks, using typeOf
+    *
     * @param c connector to type check
     * @return
     */
@@ -321,6 +336,7 @@ object DSL {
 
   /**
     * Checks if a given connector has parameters (i.e., it is a family)
+    *
     * @param c
     * @return
     */
@@ -331,6 +347,7 @@ object DSL {
 
   /**
     * Finds an instance of the connector, and removes applications, lambdas, and restrictions
+    *
     * @param c connector to be reduced
     * @return rediced connector
     */

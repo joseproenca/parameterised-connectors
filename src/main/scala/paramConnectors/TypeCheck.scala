@@ -69,12 +69,12 @@ object TypeCheck {
     check(new Context,con)
   }
 
-  private def nonZero(e:IExpr): BExpr = e >= IVal(0)
-  private def nonZero(i:Interface): BExpr = nonZero(interfaceSem(i))
-  private def nonZero(i1:Interface,i2:Interface): BExpr =
-    nonZero(i1) & nonZero(i2)
-  private def nonZero(e1:IExpr,e2:IExpr): BExpr =
-    nonZero(e1) & nonZero(e2)
+  private def nonNeg(e:IExpr): BExpr = e >= IVal(0)
+  private def nonNeg(e1:IExpr,e2:IExpr): BExpr =
+    nonNeg(e1) & nonNeg(e2)
+  private def nonNeg(i:Interface): BExpr = nonNeg(interfaceSem(i))
+  private def nonNeg(i1:Interface,i2:Interface): BExpr =
+    nonNeg(i1) & nonNeg(i2)
 
   private def check(gamma:Context, con:Connector): Type = con match {
     case Seq(c1, c2) =>
@@ -99,27 +99,30 @@ object TypeCheck {
       val y = Port(IVar(fresh())) // gen unique name
       Type(args, x, y, EQ(interfaceSem(x * i), interfaceSem(i1)) &
                        EQ(interfaceSem(y * i), interfaceSem(j1)) &
-                       nonZero(x,y) &
+                       nonNeg(x,y) &
                        phi, isG)
     case Prim(name,i,j,_) =>
       check(gamma,Utils.interfaceSem(i))
       check(gamma,Utils.interfaceSem(j))
-      Type(Arguments(), i, j, nonZero(i,j), isGeneral=true)
-    // TODO:? c^a imposes a>=0
+      Type(Arguments(), i, j, nonNeg(i,j), isGeneral=true)
+    // TODO:? c^a imposes a>=0 - DONE
     case Exp(a, c) =>
       check(gamma,a)
       val Type(args,i,j,phi,isG) = check(gamma,c)
-      Type(args, Repl(i,a), Repl(j,a), phi,isG)
+      Type(args, Repl(i,a), Repl(j,a), nonNeg(a) & phi,isG)
     // TRICKY CASE - add complex constraint!
-    // TODO:? c^(x<a) imposes a>=0
+    // TODO:? c^(x<a) imposes a>=0 - DONE
     case ExpX(x, a, c) =>
+      // TODO: replace constraints PSI of c by "AND_0<=x<a (PSI)" - since x needs scope in PSI.
       check(gamma,a)
       val (Type(args,i,j,phi,isG),newx) = checkAndAddVar(gamma,x,c) //check(gamma.addVar(x),c)
+                      // phi may contain "x" - need to replace it by all its possible values.
+      val phi2 = AndN(newx.asInstanceOf[IVar],IVal(0),a,phi)
       val ci = Sum(newx.asInstanceOf[IVar],IVal(0),a,interfaceSem(Eval(i))) // 0<=x<a
       val cj = Sum(newx.asInstanceOf[IVar],IVal(0),a,interfaceSem(Eval(j)))
       val newi = IVar(fresh()) // gen unique name
       val newj = IVar(fresh()) // gen unique name
-      Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & nonZero(newi,newj) & phi,isG)
+      Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & /*nonNeg(newi,newj)*/ nonNeg(a) & phi2,isG)
     // END OF TRICKY CASE
     case Choice(b, c1, c2) =>
       val Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)

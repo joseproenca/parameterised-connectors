@@ -58,7 +58,7 @@ object Compile {
     case Seq(con1, con2) =>
       val (c1,seed1,inp1,out1) = toPicc(con1,seed,inp) // inp1 should be empty
       val (c2,seed2,inp2,out2) = toPicc(con2,seed1,out1)
-//      if (inp1.nonEmpty || inp2.nonEmpty) errorNotInst(con)
+      if (inp1.nonEmpty || inp2.nonEmpty) errorNotInst(con)
       (c1++c2,seed2,inp1++inp2,out2)
     case Par(con1, con2) =>
       val (c1,seed1,inp1,out1) = toPicc(con1,seed,inp)

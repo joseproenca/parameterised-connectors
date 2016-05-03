@@ -130,6 +130,18 @@ object Eval {
       case Not(e3) => e3
       case e3 => Not(e3)
     }
+    case AndN(x,f,t,e1) => (apply(f),apply(t),apply(e1)) match {
+      case (IVal(a),IVal(b),e2) =>
+        var res: BExpr = BVal(true)
+        if (b > a)
+          for(y <- a until b)
+            res &= Substitution(x , IVal(y))(e2)
+        else // consistent with the simplification of integrals
+          for(y <- a until b by -1)
+            res &= Substitution(x , IVal(-y))(e2)
+        apply(res) // e(a) + ... + e(b)
+      case (f2,t2,e2) => AndN(x,f2,t2,e2)
+    }
   }
 
   /**

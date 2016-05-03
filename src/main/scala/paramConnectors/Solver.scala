@@ -285,6 +285,9 @@ object Solver {
 //    case LT(IVar(x), IVal(i)) => arithm(getIVar(x),"<",i)
 //    case LT(IVal(i), exp) => arithm(getIVar(exp),">",i)
 //    case LT(exp1, exp2) => arithm(getIVar(exp1),"<",getIVar(exp2))
+    case AndN(_, f, t, _) =>
+      throw new UnhandledOperException(s"Case not handled - neither ${Show(f)} nor ${Show(t)} can have variables, in:\n  "+Show.apply(bExpr))
+
   }
 
   private def comp(e1:IExpr,e2:IExpr,op:String,revop:String,test:(Int,Int)=>Boolean): Constraint =

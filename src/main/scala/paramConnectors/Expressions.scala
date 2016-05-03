@@ -79,4 +79,5 @@ case class GT(e1:IExpr,e2:IExpr) extends BExpr
 case class LT(e1:IExpr,e2:IExpr) extends BExpr
 case class LE(e1:IExpr,e2:IExpr) extends BExpr
 case class GE(e1:IExpr,e2:IExpr) extends BExpr
+case class AndN(x:IVar,from:IExpr,to:IExpr,e:BExpr) extends BExpr
 // TODO: add GT - useful for imposing certain interfaces to be positive
