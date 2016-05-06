@@ -25,8 +25,6 @@ private case class BItem(v:BVar,e:BExpr) extends Item {
   * @param items pairs of (variable -> expression) to be replaced
  */
 class Substitution(private val items:List[Item]) {
-//  private implicit def pair2IItem(p:(IVar,IExpr)): IItem = IItem(p._1,p._2)
-//  private implicit def pair2BItem(p:(BVar,BExpr)): BItem = BItem(p._1,p._2)
 
   private var isGeneral: Boolean = true
   def setConcrete(): Unit = {
@@ -86,7 +84,8 @@ class Substitution(private val items:List[Item]) {
     var Type(args,i,j,const,genType) = typ
     for (it <- items) {
       val vars = args.vars
-      args = subst(it, args, vars) // either "ID" (if general) or "constant args" (if concrete)
+      args = if (isGeneral) args else Arguments()
+      // BEFORE: subst(it, args, vars) // either "ID" (if general) or "constant args" (if concrete)
       i = subst(it, i)
       j = subst(it, j)
       const = subst(it, const)
@@ -94,6 +93,8 @@ class Substitution(private val items:List[Item]) {
     Type(args,i,j,const,isGeneral = isGeneral && genType)
   }
 
+  /** updates a given type applying 'this' substitution to arguments, interfaces, and constraints.
+    * Used only by alpha equivalence in [[TypeCheck]].  */
   def alphaEquiv(t:Type) = {
     var Type(args,i,j,const,genType) = t
     var vars = args.vars
@@ -110,7 +111,7 @@ class Substitution(private val items:List[Item]) {
     Type(Arguments(vars),i,j,const,isGeneral = isGeneral && genType)
   }
 
-  // substitution in boolean expressions
+  /** substitution in boolean expressions */
   private def subst(i:Item,exp:BExpr): BExpr = exp match {
     case x@BVar(_) => i match {
       case BItem(`x`, e) => e
@@ -131,7 +132,7 @@ class Substitution(private val items:List[Item]) {
       case _ => AndN(x,subst(i,f),subst(i,t),subst(i,e))
     }
   }
-  // substitution in int expressions
+  /** substitution in int expressions */
   private def subst(i:Item,exp:IExpr): IExpr = exp match {
     case x@IVar(_) => i match {
       case IItem(`x`, e) => e
@@ -180,29 +181,6 @@ class Substitution(private val items:List[Item]) {
     case BApp(c, b) => BApp(subst(it,c),subst(it,b))
     case Restr(c, phi) => Restr(subst(it,c),subst(it,phi))
   }
-  // substitution in arguments of a type. 3 possible versions
-  // 1- this version ignores the replacing of variables, the commented one replaces and cleans up the argument list
-//  private def subst(i:Item,args:Arguments,l:List[Var]): Arguments = args
-  // 2- this version ignores the replacing of variables, but removes them if it is a concrete instance
-  private def subst(i:Item,args:Arguments,l:List[Var]): Arguments =
-    if (isGeneral) args else Arguments()
-  // 3- this version removes parameters that are not used after substitution.
-//  private def subst(it:Item,args:Arguments,vars:List[Var]): Arguments = (it,args.vars) match {
-//    case (_,Nil) => Arguments(Nil)
-//    case (BItem(x@BVar(_),y@BVar(_)), x2 :: tl) if x == x2 =>
-//      if (vars contains x2) Arguments(tl) // ignore variable if replacing by a known var
-//      else Arguments(y :: tl)    // replace variable here
-//    case (x@IItem(IVar(_),y@IVar(_)), x2 :: tl) if x == x2 =>
-//      if (vars contains x2) Arguments(tl) // ignore variable if replacing by a known var
-//      else Arguments(y :: tl)    // replace variable here
-//    case (BItem(x@BVar(_),BVal(_)), x2 :: tl) if x == x2 =>
-//      Arguments(tl)    // variable not needed because it has a concrete value
-//    case (IItem(x@IVar(_),IVal(_)), x2 :: tl) if x == x2 =>
-//      Arguments(tl)    // variable not needed because it has a concrete value
-//    case (_,hd::tl) =>
-//      Arguments(hd::subst(it,Arguments(tl),vars).vars)
-//    // TODO: if substituting x->(gen. expr), need to extract free variables and add them to arguments (if new)
-//  }
 
   /**
    * get extra constraints for the type after unification, from the substitution, if applicable

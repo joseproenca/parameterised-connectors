@@ -93,4 +93,35 @@ object Show {
       else " | " + apply(typ.const) )
 
 
+
+  ////////////////
+  //
+  def source(con: Connector): String = con match {
+    case Seq(c1, c2)    => s"${showSP(c1)} & ${showSP(c2)}"
+    case Par(c1, c2)    => s"${showSP(c1)} * ${showSP(c2)}"
+    case Id(Port(IVal(1))) => "id"
+    case Id(Port(IVal(0))) => "(id^0)"
+    case Id(x)          => s"(id^${showP(x)})"
+    case Symmetry(i, j) => s"sym(${apply(i)},${apply(j)})"
+    case Trace(i, c)    => s"Tr(${apply(i)},${source(c)})"
+    case Prim(name,_,_,_) => name
+    case Exp(a, c)  => s"${showP(c)}^${showP(a)}"
+    case ExpX(x, a, c)  => s"(${showSP(c)}^(${showP(x)}<--${showP(a)})"
+    case Choice(b, c1, c2) => s"${showP(b)} ? ${showSP(c1)} + ${showSP(c2)}"
+    //s"if ${showP(b)} then ${showP(c1)} else ${showP(c2)}"
+    case IAbs(x, c)     => s"lam(${apply(x)},${source(c)})"
+    case BAbs(x, c)     => s"lam(${apply(x)}${source(c)})"
+    case IApp(c, a)     => s"${showSP(c)}(${apply(a)})"
+    case BApp(c, b)     => s"${showSP(c)}(${apply(b)})"
+    case Restr(c,b)     => s"${showSP(c)} | ${showP(b)}"
+  }
+  private def showSP(con:Connector): String = con match {
+    case Seq(_,_) | Par(_,_) | Choice(_,_,_) | IAbs(_,_) | BAbs(_,_) |
+         Exp(_,_) | ExpX(_,_,_) | Restr(_,_) => s"(${source(con)})"
+    case _ => source(con)
+  }
+
+
+
+
 }

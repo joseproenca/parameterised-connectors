@@ -157,6 +157,7 @@ object Simplify {
     case _ => e
   }
 
+  /** Checks if a given variable only occurrs liniearly in every side of all conjunctive (in)equations. */
   private def isLinearIneq(x:IVar,bExpr:BExpr): Boolean = bExpr match {
     case And(es) => es.map(isLinearIneq(x,_)).forall(identity)
     case EQ(e1, e2) => degree(x,e1)<=1 && degree(x,e2)<=1
@@ -167,10 +168,6 @@ object Simplify {
     case AndN(x2, from, to, e) =>
       if (x == x2) true
       else degree(x,from)<=1 && degree(x,to)<=1 && isLinearIneq(x,e)
-//    case BVal(b) =>
-//    case BVar(x) =>
-//    case Or(e1, e2) =>
-//    case Not(e) =>
     case _ => false
   }
 
@@ -326,7 +323,7 @@ object Simplify {
       case Port(IVal(0)) => apply(c)
       case i2 => Trace(i2,apply(c))
     }
-    case Prim(_,_,_,_) => con
+    case Prim(n,a,b,e) => Prim(n,apply(a),apply(b),e)
     case Exp(a, c) => Eval(a) match {
       case IVal(v) if v<1  => Id(Port(IVal(v)))
       case IVal(v) => apply(Par(c,Exp(IVal(v-1),c)))

@@ -68,7 +68,7 @@ object Unify {
 //    }
 //    for (v <- Utils.freeVars(e))
 //      if (bounded contains v) {
-//        newrest = newrest & EQ(x,e) //TODO: avoid repetition (not a big problem)
+//        newrest = newrest & EQ(x,e) //avoid repetition (not a big problem)
 //        println("##### yes!")
 //      }
     (news + (x,e), newrest)

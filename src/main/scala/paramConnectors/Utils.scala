@@ -30,6 +30,8 @@ object Utils {
     case And(e2::es) => isFree(x,e2) && isFree(x,And(es))
     case Or(e1, e2) => isFree(x,e1) && isFree(x,e2)
     case Not(e1) => isFree(x,e1)
+    case AndN(`x`, from, to, _) => isFree(x,from) && isFree(x,to)
+    case AndN(_, from, to, e2) => isFree(x,from) && isFree(x,to) && isFree(x,e2)
   }
 
   //  def free(x:IVar,itf:Interface): Boolean = itf match {
@@ -62,6 +64,7 @@ object Utils {
     case And(e1::es) => freeVars(e1) ++ freeVars(And(es))
     case Or(e1, e2) => freeVars(e1) ++ freeVars(e2)
     case Not(e1) => freeVars(e1)
+    case AndN(x,from,to,e1) => (freeVars(e1)-x) ++ freeVars(from) ++ freeVars(to)
   }
   def freeVars(i:Interface): Set[Var] = freeVars(interfaceSem(i))
 

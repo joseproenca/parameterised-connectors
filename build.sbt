@@ -2,7 +2,14 @@ name := "parameterised-connectors"
 
 version := "1.0"
 
-scalaVersion := "2.10.5" //"2.11.7" -> strangely requires old version of picc (github)
+scalaVersion := "2.11.7"
+  //"2.10.5" //"2.11.7" -> strangely requires old version of picc (github)
+
+// more warnings
+scalacOptions ++= Seq("-unchecked", "-deprecation","-feature")
+
+// more complete check for complete "cases" (scala 2.10)
+// initialize ~= { _ => sys.props("scalac.patmat.analysisBudget") = "512" }
 
 libraryDependencies ++= Seq(
   "junit" % "junit" % "4.12",

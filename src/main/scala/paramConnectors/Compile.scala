@@ -2,11 +2,9 @@ package paramConnectors
 
 import paramConnectors.TypeCheck.TypeCheckException
 import picc.connectors.Primitive
-import picc.connectors.constraints.Constraint
 import picc.connectors.primitives._
 
 /**
-  * EXPERIMENTAL (and still buggy)
   * Convert a (family of) connector(s) to a runnable connector,
   * building an instance of a connector in [[picc]].
   *
@@ -16,6 +14,7 @@ object Compile {
   /**
     * Generates a primitive in [[picc]] based on the name and arity of a primitive
     * in [[paramConnectors]].
+    *
     * @param p name of the primitive
     * @param in name of input ports
     * @param out name of output ports
@@ -24,7 +23,9 @@ object Compile {
   def genPrimitive(p:String,in:List[String],out:List[String],extra:Option[Any]): Primitive = {
 //    println(s"$p: (${in.mkString(",")}) -> (${out.mkString(",")})")
     (p, in.size, out.size,extra) match {
+    case ("sync",1,1,_) => new Sync(in.head,out.head)
     case ("fifo",1,1,_) => new Fifo(in.head,out.head)
+    case ("fifofull",1,1,_) => new Fifo(in.head,out.head,Some(1))
     case ("lossy",1,1,_) => new Lossy(in.head,out.head)
     case ("dupl",1,2,_) => new Sync(in.head,out.head) ++ new Sync(in.head,out.tail.head)
     case ("merger",2,1,_) => new NMerger(in,out.head)
@@ -36,141 +37,137 @@ object Compile {
 
 
   /**
-    * EXPERIMENTAL
-    * Convert a (family of) connector(s) to a runnable connector,
-    * using the primitives defined by [[genPrimitive]]
-    * @param con connector used to generate a running object
-    * @return a running connector in PICC
+    * Produces a graphviz dot graph with the primitives, hiding unnecessary sync channels.
+    * @param c connector to be drawn
+    * @return dot graph
     */
-  def apply(con:Connector): Primitive = toPicc(Eval.reduce(con),0,List())._1
+  def toDot(c:Connector): String = {
+    val (edges,bounds) = toDotEdges(c)
+    s"digraph G {\n{ node [margin=0 width=0.2 shape=circle]\n$bounds}\n" ++
+      s"  rankdir=LR;\n  node [margin=0 width=0.2 shape=circle];\n$edges}"
+  }
 
   /**
-    * EXPERIMENTAL
-    * Given a parameterised connector, it creates a concrete instance of it
-    * (i.e., no abstractions, lambdas, nor restrictions)
-    * and produces a PICC connector (with concrete variable names).
-    * Uses an intermediate structure with a list of inputs and a list of outputs.
+    * Produces a runnable [[picc]] connector based on given [[paramConnectors]] connector
+    * @param c [[picc]] connector
+    * @return [[paramConnectors]] connector
     */
-  private def toPicc(con:Connector,seed:Int,inp:List[String]):(Primitive,Int,List[String],List[String]) = {
-//    println(s"toPicc $con, $seed, (${inp.mkString(",")})")
-    con match {
-  //  def toPicc(c:Connector,seedIn:String="",seedOut:String): Primitive = c match {
-    case Seq(con1, con2) =>
-      val (c1,seed1,inp1,out1) = toPicc(con1,seed,inp) // inp1 should be empty
-      val (c2,seed2,inp2,out2) = toPicc(con2,seed1,out1)
-      if (inp1.nonEmpty || inp2.nonEmpty) errorNotInst(con)
-      (c1++c2,seed2,inp1++inp2,out2)
-    case Par(con1, con2) =>
-      val (c1,seed1,inp1,out1) = toPicc(con1,seed,inp)
-      val (c2,seed2,inp2,out2) = toPicc(con2,seed1,inp1)
-      (c1++c2,seed2,inp2,out1++out2)
-    case Id(itr) => Eval(itr) match {
-      case Port(IVal(v)) => mkSyncs(v,seed,inp)
-      case _ => errorNotInst(con)
+  def apply(c:Connector):Primitive = {
+    val g = redGraph(toGraph(Eval.reduce(c)))
+    var res: Primitive = new picc.connectors.primitives.Empty
+    for (Edge(p,i,o) <- g.edges) {
+      res ++= genPrimitive(p.name, i.map(_.toString), o.map(_.toString), p.extra)
     }
-    case Symmetry(i,j) =>  (Eval(i),Eval(j)) match {
-      case (Port(IVal(ni)), Port(IVal(nj))) =>
-        val (c1,seed1,inp1,out1) = mkSyncs(ni,seed,inp)
-        val (c2,seed2,inp2,out2) = mkSyncs(nj,seed1,inp1)
-        (c1++c2,seed2,inp2,out2++out1)
-      case _ => errorNotInst(con)
-    }
-    case Trace(i,c) => Eval(i) match {
-      case Port(IVal(vt)) =>
-        println(s"checking type of $c")
-        val typ = paramConnectors.DSL.typeInstance(c)
-        (Eval(typ.i),Eval(typ.j)) match {
-          case (Port(IVal(vc)),Port(IVal(vcj))) =>
-//            println(s"trace of c:$vc->$vcj (inp:$inp,seed:$seed)")
-            val trPorts = (for (i<-seed until vt+seed) yield "t"+i).toList
-//            println(s"trPorts: $trPorts")
-            val inpFilt = inp.take(vc-vt) ++
-                          (for (x<-vt+seed until (vc-inp.size+seed)) yield "t"+x) ++
-                          trPorts
-//            println(s"inpFilt: $inpFilt (from ${vt+seed} until ${vc-inp.size+seed})")
-            val (c1, seed1, inp1, out1) = toPicc(c, seed+vt, inpFilt)
-//            println(s"toPicc(c): ${c1.getConstraint},$seed1,$inp1,$out1")
-            if (inp1.nonEmpty) throw new TypeCheckException(s"still inputs $inp1 after converting $c")//errorNotInst(con)
-            val loop = mkSyncs(out1.drop(vcj-vt),trPorts)
-//            println(s"new loop: ${loop.getConstraint}")
-            (c1++loop,seed1,inp1++inp.drop(vc-vt),out1.take(vcj-vt))
-          case (a,b) => throw new TypeCheckException(s"type of c with unexpected type $a->$b - $c")
-        }
-      case _ => errorNotInst(con)
-    }
-    case Prim(name, i, j, ex) => (Eval(i),Eval(j)) match {
-      case (Port(IVal(ni)), Port(IVal(nj))) =>
-        var in:List[String] = inp.take(ni)
-        var out = List[String]()
-        var s = seed
-        for (x<- (in.size+1) to ni) {
-          in ::= ("p"+s)
-          s +=1
-        }
-        for (x<-1 to nj) {
-          out ::= "p" + s
-          s +=1
-        }
-        (genPrimitive(name, in, out, ex),s,inp.drop(ni),out)
-      case _ => errorNotInst(con)
-    }
-//    case Exp(a, c) => Eval(a) match {
-//      case IVal(0) => (emptyPrim,seed,inp,List())
-//      case IVal(n) =>
-//        var (c1,s,is,os) = toPicc(c,seed,inp)
-//        var allOut  = os
-//        var allPrim = c1
-//        for (i <- 2 to n) {
-//          (c1,s,is,os) = toPicc(c,s,is)
-//          allOut  ++= os
-//          allPrim ++= c1
-//        }
-//        (allPrim,s,is,allOut)
-//      case _ => errorNotInst(con)
-//    }
-//    case ExpX(x, a, c) => Eval(a) match {
-//      case IVal(0) => (emptyPrim,seed,inp,List())
-//      case IVal(n) =>
-//        var (c1,s,is,os) = toPicc(c,seed,inp)
-//        var allOut  = os
-//        var allPrim = c1
-//        for (i <- 2 to n) {
-//          (c1,s,is,os) = toPicc(c,s,is)
-//          allOut  ++= os
-//          allPrim ++= c1
-//        }
-//        (allPrim,s,is,allOut)
-//      case _ => errorNotInst(con)
-//    }
-//    case IAbs(x, c) => throw new TypeCheckException("Failed to run abstraction: "+Show(c))
-//    case BAbs(x, c) => throw new TypeCheckException("Failed to run abstraction: "+Show(c))
-//    case IApp(c, a) => throw new TypeCheckException("Failed to run application: "+Show(c))
-//    case BApp(c, b) => throw new TypeCheckException("Failed to run application: "+Show(c))
-//    case Restr(c, phi) => throw new TypeCheckException("Failed to run restriction: "+Show(c))
-    case _ => errorNotInst(con)
-  }}
-
-  /// Auxiliary functions for toPicc ///
-  private def errorNotInst(c:Connector) =
-    throw new TypeCheckException("trying to run a non-instantiated connector "+Show(c))
-
-  private def mkSyncs(size:Int, seed:Int, inp:List[String]): (Primitive,Int,List[String],List[String]) =
-    size match {
-      case 0 => (new Primitive(List()){val getConstraint: Constraint = Constraint()}
-        ,seed,inp,List())
-      case 1 => if (inp.nonEmpty) (new Sync(inp.head,"s"+seed),seed+1,inp.tail,List("s"+seed))
-      else (new Sync("s"+seed,"s"+(seed+1)),seed+2,inp,List("s"+(seed+1)))
-      case n =>
-        val rest = mkSyncs(n-1,seed,inp)
-        if (rest._3.nonEmpty) (new Sync(rest._3.head,"s"+rest._2),rest._2+1,rest._3.tail,List("s"+rest._2))
-        else (new Sync("s"+rest._2,"s"+(rest._2+1)),rest._2+2,rest._3,List("s"+(rest._2+1)))
-    }
-  private def mkSyncs(inp:List[String],out:List[String]): Primitive = (inp,out) match {
-    case (i::Nil,o::_) => new Sync(i,o)
-    case (i::_,o::Nil) => new Sync(i,o)
-    case (i::resti,o::resto) => new Sync(i,o) ++ mkSyncs(resti,resto)
-    case _ => emptyPrim
+    res
   }
-  private def emptyPrim = new Primitive(List()) {val getConstraint=Constraint()}
 
+  case class Edge(prim: Prim, ins:List[Int], outs:List[Int])
+  case class Graph(edges:List[Edge],ins:List[Int], outs:List[Int]) {
+    def ++(other:Graph) = Graph(edges++other.edges,ins++other.ins,outs++other.outs)
+  }
+  private var seed:Int = 0 // global variable
+
+  private def toDotEdges(c:Connector): (String,String) = {
+    seed = 0
+    val g = redGraph(toGraph(Eval.reduce(c)))
+    val res = new StringBuilder
+    for (e <- g.edges) {
+      for (i <- e.ins; o <- e.outs)
+        res append s"  $i -> $o [label=${e.prim.name}];\n"
+      if (e.ins.isEmpty && e.outs.size>1)
+        for (i <- e.outs; o <- e.outs; if e.outs.indexOf(i)<e.outs.indexOf(o))
+          res append s"""  $i -> $o [dir=both,label="${e.prim.name}"];\n"""
+      if (e.outs.isEmpty && e.ins.size>1)
+        for (i <- e.ins; o <- e.ins; if e.ins.indexOf(i)<e.ins.indexOf(o))
+          res append s"""  $i -> $o [dir=both,arrowhead="inv",arrowtail="inv",label="${e.prim.name}"];\n"""
+      if (e.ins.isEmpty && e.outs.size==1)
+        res append s"""  ${e.prim.name+"_"+e.outs.head} -> ${e.outs.head};\n"""
+      if (e.outs.isEmpty && e.ins.size==1)
+        res append s"""  ${e.ins.head} -> ${e.prim.name+"_"+e.ins.head};\n"""
+    }
+    val bounds = new StringBuilder
+    for (i <- g.ins ++ g.outs)
+      bounds append s"  $i [style=filled]\n"
+    (res.toString,bounds.toString)
+  }
+
+
+  private def subst(l:List[Int],m:Map[Int,Int]):List[Int] =
+    l.map(x => if (m contains x) m(x) else x)
+  private def subst(edge:Edge,m:Map[Int,Int]):Edge =
+    Edge(edge.prim,subst(edge.ins,m),subst(edge.outs,m))
+  private def subst(g:Graph,m:Map[Int,Int]): Graph =
+    Graph(g.edges.map(subst(_,m)),subst(g.ins,m),subst(g.outs,m))
+
+  /**
+    * Calculates a graph representation of a (instantiated and simplified) connector.
+    *
+    * @param prim connector to be converted to a graph
+    * @return graph representation
+    */
+  private def toGraph(prim:Connector): Graph = prim match {
+    case Seq(c1, c2) =>
+      val (g1,g2) = (toGraph(c1),toGraph(c2))
+      val g2b = subst(g2, g2.ins.zip(g1.outs).toMap )
+      Graph(g1.edges++g2b.edges, g1.ins,g2b.outs)
+    case Par(c1, c2) => toGraph(c1) ++ toGraph(c2)
+    case Id(Port(IVal(v))) =>  //mkGrSyncs(v)
+      val i = seed until seed+v
+      val j = seed+v until seed+2*v
+      seed += (2*v)
+      Graph(mkGrSyncs(i,j),i.toList,j.toList)
+    case Symmetry(Port(IVal(i)), Port(IVal(j))) =>
+      val ins   = seed until seed+i+j
+      seed += (i+j)
+      val outs1 = seed until seed+i+j
+      val outs2 = (seed+i until seed+j+i)++(seed until seed+i)
+      seed += (i+j)
+      Graph(mkGrSyncs(ins,outs1),ins.toList,outs2.toList)
+    case Trace(Port(IVal(i)), c) =>
+      val gc = toGraph(c)
+      val ins =  gc.ins.takeRight(i)
+      val outs = gc.outs.takeRight(i)
+      val loop = mkGrSyncs(outs,ins)
+      Graph(gc.edges++loop,gc.ins.dropRight(i),gc.outs.dropRight(i))
+//      gc ++ Graph(mkGrSyncs(outs,ins),outs,ins)
+    case p@Prim(name, Port(IVal(pi)), Port(IVal(pj)), extra) =>
+      val (i,j) = ((seed until seed+pi).toList,(seed+pi until seed+pi+pj).toList)
+      seed += (pi+pj)
+      Graph(List(Edge(p,i,j)),i,j)
+    case _ =>
+      throw new TypeCheckException("Failed to compile a non-instantiated connector "+Show(prim))
+  }
+
+
+  private def mkGrSyncs(i:Iterable[Int],j:Iterable[Int]): List[Edge] = {
+    (for ((i,j) <- i.zip(j)) yield
+       Edge(Prim("sync", Port(IVal(1)), Port(IVal(1))), List(i), List(j))).toList
+  }
+
+  private def redGraph(graph: Graph): Graph = {
+    val (es,m) = redGraphAux(graph.edges,List())
+    var res = Graph(es,graph.ins,graph.outs)
+    var map = m
+    while (map.nonEmpty) {
+      val (f,t) = map.head
+      res = subst(res,Map(f->t))
+      map = map.tail.map{
+        case (a,`f`) => (a,t)
+        case (`f`,b) => (t,b)
+        case x => x
+      }
+    }
+    res
+  }
+
+  def redGraphAux(es:List[Edge],m:List[(Int,Int)]): (List[Edge],List[(Int,Int)]) = es match {
+    case Nil => (es,m)
+    case Edge(Prim("sync",_,_,_),List(in),List(out))::tl =>
+      val pair = out->in
+      val (es2,m2) = redGraphAux(tl,m)
+      (es2,pair::m2)
+    case edge::tl =>
+      val (es2,m2) = redGraphAux(tl,m)
+      (edge::es2,m2)
+  }
 }

@@ -15,7 +15,6 @@ sealed abstract class IExpr extends Expr {
   def ===(that:IExpr) = EQ(this,that)
   def >(that:IExpr)   = GT(this,that)
   def <(that:IExpr)   = LT(this,that)
-  // TODO: make these primitives of BExpr (and of the constraint solver)
   def >=(that:IExpr)  = GE(this,that)
   def <=(that:IExpr)  = LE(this,that)
 
@@ -80,4 +79,3 @@ case class LT(e1:IExpr,e2:IExpr) extends BExpr
 case class LE(e1:IExpr,e2:IExpr) extends BExpr
 case class GE(e1:IExpr,e2:IExpr) extends BExpr
 case class AndN(x:IVar,from:IExpr,to:IExpr,e:BExpr) extends BExpr
-// TODO: add GT - useful for imposing certain interfaces to be positive

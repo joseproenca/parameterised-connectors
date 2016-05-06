@@ -3,12 +3,13 @@ package paramConnectors
 import java.util
 
 import paramConnectors.TypeCheck.TypeCheckException
+import scala.language.implicitConversions
 
 /**
  * Created by jose on 17/05/15.
  */
 object DSL {
-  // goal: to write "fifo" * id & id^2
+  // goal: e.g., to write "fifo" * id & id^2
   implicit def str2conn(s:String): Connector = Prim(s,1,1)
   implicit def str2IVar(s:String): IVar = IVar(s)
   implicit def str2BVar(s:String): BVar = BVar(s)
@@ -24,9 +25,6 @@ object DSL {
   def lam(x:B,c:Connector) = BAbs(x,c)
   def not(b:BExpr) = Not(b)
 
-  val xxx = new util.ArrayList[Int]()
-  xxx.add(1)
-
   val sym  = Symmetry
   val Tr   = Trace
   val Prim = paramConnectors.Prim
@@ -35,11 +33,14 @@ object DSL {
   val swap = Symmetry(1,1)
   val id = Id(1)
   val fifo = Prim("fifo",1,1)
+  val fifofull = Prim("fifofull",1,1)
   val lossy = Prim("lossy",1,1)
-  val dupl = Prim("dupl",1,one*one)
-  val merger = Prim("merger",one*one,1)
-  val drain = Prim("drain",one*one,0)
+  val dupl = Prim("dupl",1,2)
+  val merger = Prim("merger",2,1)
+  val drain = Prim("drain",2,0)
   def writer(l:List[Any]) = Prim("writer",0,1,Some(l))
+  def writer(v:Int)    = Prim("writer",0,1,Some(List(v)))
+  def writer(v:String) = Prim("writer",0,1,Some(List(v)))
   def reader(n:Int) = Prim("reader",1,0,Some(n))
 
   // examples of connectors
@@ -72,8 +73,34 @@ object DSL {
     */
   def run(c:Connector,steps:Int): Unit = {
     val con = Compile(c)
-    for (i <- 0 until steps) con.doStep
+    for (i <- 0 until steps)
+      if (!con.doStep().isDefined) println("// no step //")
   }
+
+  /**
+    * Same as [[run(c,steps)]] except that it prints debug data between steps
+    *
+    * @param c connector to be compiled and executed
+    * @param steps number of steps to execute
+    */
+  def runDebug(c:Connector,steps:Int): Unit = {
+    val con = Compile(c)
+    for (i <- 0 until steps) con.doDebugStep()
+  }
+
+  /**
+    * Build a dot-graph of a connector
+    * @param c connector
+    * @return dot graph
+    */
+  def draw(c:Connector) = Compile.toDot(c)
+
+  /**
+    * Build a runnable [[picc]] connector, and use it to produce a dot-graph
+    * @param c connector
+    * @return dot graphs
+    */
+  def compileAndDraw(c:Connector) = picc.graph.Dot(Compile(c))
 
   // overall methods to typecheck
   /**
@@ -132,22 +159,6 @@ object DSL {
     val subst_2 = Solver.solve(type_4)
     if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
     if (rest_3 != BVal(true)) subst_2.get.setConcrete()
-//    // 1 - build derivation tree
-//    val type_1 = TypeCheck.check(c)
-//    // 2 - unify constraints and get a substitution
-//    val (subst_1,rest_1) = Unify.getUnification(type_1.const,type_1.args.vars)
-//    // 3 - apply substitution to the type
-//    val type_2 = subst_1(type_1)
-//    val rest_2 = subst_1.getConstBoundedVars(type_1)
-//    val type_3 = Type(type_2.args,type_2.i,type_2.j,type_2.const & rest_2,type_2.isGeneral)
-//    // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
-//    val type_4 = Simplify(type_3)
-//    // 5 - solve rest of the constraints
-//    //val newsubst = Solver.solve(typev.const)
-//    val newsubst = Solver.solve(type_4) // EXPERIMENTAL: smarter way to annotate types with "concrete".
-//    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-//    if (rest_2 != BVal(true)) newsubst.get.setConcrete()
-    // 6 - apply the new substitution to the previous type and eval
     Eval.instantiate(subst_2.get(type_4))
   }
 
@@ -169,13 +180,6 @@ object DSL {
     // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
     val typev = Simplify(typ)
     // 5 - solve rest of the constraints
-    //val newsubst = Solver.solve(typev.const)
-//    val newsubst = Solver.solve(typev) // EXPERIMENTAL: smarter way to annotate types with "concrete".
-//    if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-//    if (newrest != BVal(true)) newsubst.get.setConcrete()
-//    // 6 - apply the new substitution to the previous type and eval
-//    subst ++ newsubst.get
-
     val s = Solver.solve(typev.const)
     if (s.isEmpty)
       throw new TypeCheckException("Solver failed: no solutions found for "+Show(typev.const))
@@ -220,61 +224,12 @@ object DSL {
   }
 
   /**
-   * Type check a connector (build tree, unify, and solve constraints), and print all intermediate results
-    *
-    * @param c connector to be type-checked
-   * @return the type of the connector - return a concrete type if one is found, otherwise the general one
-   */
-  def debug(c:Connector): Unit = {
-    try{
-      println(Show(c))
-      // 1 - build derivation tree
-      val type_1 = TypeCheck.check(c)
-      println(s" - type-rules:    $type_1")
-      // 2 - unify constraints and get a substitution
-      val (subst,rest) = Unify.getUnification(type_1.const,type_1.args.vars)
-      println(s" - [ unification: $subst ]")
-      println(s" - [ missing (ign):     ${Show(rest)} ]")
-      // 3 - apply substitution to the type
-      val type_2 = subst(type_1)
-      println(s" - substituted:   $type_2")
-      val newrest = subst.getConstBoundedVars(type_1)
-      println(s" - [ missing:     ${Show(newrest)} ]")
-      val type_3 = Type(type_2.args,type_2.i,type_2.j,type_2.const & newrest,type_2.isGeneral)
-      println(s" - extended:      $type_3")
-      // 4 - evaluate (and simplify) resulting type (eval also in some parts of the typecheck).
-      val type_4 = Simplify(type_3)
-      println(s" - simplified:    $type_4")
-      // 5 - solve rest of the constraints
-      //val newsubst = Solver.solve(typev.const)
-      val newsubst = Solver.solve(type_4) // EXPERIMENTAL: smarter way to annotate types with "concrete".
-      if (newsubst.isEmpty) throw new TypeCheckException("Solver failed")
-      if (newrest != BVal(true)) newsubst.get.setConcrete()
-      println(s" - [ solution:    $newsubst ]")
-      // 6 - apply the new substitution to the previous type and eval
-      val type_5 = newsubst.get(type_4)
-      val newrest2 = newsubst.get.getConstBoundedVars(type_5)
-      val type_6 = Eval(Type(type_5.args,type_5.i,type_5.j,type_5.const & newrest2,type_5.isGeneral))
-      println(s" - post-solver:   $type_6")
-      // 7 - apply the new substitution to the previous type and eval
-      val type_5b = Eval.instantiate(newsubst.get(type_4))
-      println(s" - instantiation: $type_5b")
-      // 8 - show final type
-      println(" : "+Show(typeOf(c)))
-    }
-    catch {
-      case e:TypeCheckException => println(s" ! type checking error: ${e.getMessage}")
-      case x : Throwable => throw x
-    }
-  }
-
-  /**
     * Type check a connector (build tree, unify, and solve constraints), and print all intermediate results
     *
     * @param c connector to be type-checked
     * @return the type of the connector - return a concrete type if one is found, otherwise the general one
     */
-  def debug2(c:Connector): Unit = {
+  def debug(c:Connector): Unit = {
     try{
       println(Show(c))
       // 1 - build derivation tree

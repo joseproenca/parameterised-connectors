@@ -62,7 +62,8 @@ object TypeCheck {
 
   /**
    * Finds a type (and constraints) by building a type derivation tree.
-   * @param con connector to be type checked
+    *
+    * @param con connector to be type checked
    */
   def check(con:Connector): Type = {
     seed = 0
@@ -105,15 +106,14 @@ object TypeCheck {
       check(gamma,Utils.interfaceSem(i))
       check(gamma,Utils.interfaceSem(j))
       Type(Arguments(), i, j, nonNeg(i,j), isGeneral=true)
-    // TODO:? c^a imposes a>=0 - DONE
     case Exp(a, c) =>
       check(gamma,a)
       val Type(args,i,j,phi,isG) = check(gamma,c)
       Type(args, Repl(i,a), Repl(j,a), nonNeg(a) & phi,isG)
-    // TRICKY CASE - add complex constraint!
-    // TODO:? c^(x<a) imposes a>=0 - DONE
+    // ExpX is a TRICKY CASE - add complex constraint!
+    //  - c^(x<a) imposes a>=0
+    //  - c^(x<a) imposes, for each constr. b of c, that "And_{v<a} b.[v/x]"
     case ExpX(x, a, c) =>
-      // TODO: replace constraints PSI of c by "AND_0<=x<a (PSI)" - since x needs scope in PSI.
       check(gamma,a)
       val (Type(args,i,j,phi,isG),newx) = checkAndAddVar(gamma,x,c) //check(gamma.addVar(x),c)
                       // phi may contain "x" - need to replace it by all its possible values.
@@ -187,6 +187,7 @@ object TypeCheck {
     case And(e::es)  => check(gamma,e); check(gamma,And(es))
     case Or(e1, e2)  => check(gamma,e1); check(gamma,e2)
     case Not(e1)     => check(gamma,e1)
+    case AndN(x,from,to,e) => check(gamma,from) ; check(gamma,to) ; checkAndAddVar(gamma,x,e) //check(gamma.addVar(x),e)
   }
 
 
@@ -211,16 +212,19 @@ object TypeCheck {
     else
       (check(gamma.addVar(x),c),x)
   }
-  private def checkAndAddVar(gamma:Context,x:Var,e:IExpr): Unit = {
+  private def checkAndAddVar(gamma:Context,x:Var,e:Expr): Unit = {
     if (gamma contains x.x) {
       val y = fresh(x)
-      x match {
-        case v@IVar(_) => check(gamma.addVar(IVar(y)),Substitution(v,IVar(y))(e))
-        case v@BVar(_) => check(gamma.addVar(BVar(y)),Substitution(v,BVar(y))(e))
+      (x,e) match {
+        case (v@IVar(_),e2:IExpr) => check(gamma.addVar(IVar(y)),Substitution(v,IVar(y))(e2))
+        case (v@BVar(_),e2:BExpr) => check(gamma.addVar(BVar(y)),Substitution(v,BVar(y))(e2))
+        case _ =>
       }
     }
-    else
-      check(gamma.addVar(x),e)
+    else e match {
+      case e2: IExpr => check(gamma.addVar(x), e2)
+      case e2: BExpr => check(gamma.addVar(x), e2)
+    }
 
   }
 }
