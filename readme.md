@@ -48,8 +48,8 @@ draw(exrouter)
 The resulting string from ```draw(exrouter)``` can be compiled using dot, for example, using the online tool [Viz.js](https://mdaines.github.io/viz.js/).
 The produced graph is depicted below.
 
-![ExRouter diagram produced with draw(exrouter)](https://raw.githubusercontent.com/joseproenca/parameterised-connectors/master/exrouter.svg)
-<img src="https://raw.githubusercontent.com/joseproenca/parameterised-connectors/master/exrouter.svg">
+![ExRouter diagram produced with draw(exrouter)](https://cdn.rawgit.com/joseproenca/parameterised-connectors/master/exrouter.svg)
+<img src="https://cdn.rawgit.com/joseproenca/parameterised-connectors/master/exrouter.svg">
 
 
 Running connectors
