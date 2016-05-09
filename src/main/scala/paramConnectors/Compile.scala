@@ -5,8 +5,8 @@ import picc.connectors.Primitive
 import picc.connectors.primitives._
 
 /**
-  * Convert a (family of) connector(s) to a runnable connector,
-  * building an instance of a connector in [[picc]].
+  * Convert a (family of) connector(s) into: (1) a graph and (2) a runnable connector,
+  * The graph is in Dot, and the connector is built as an instance of a connector in [[picc]].
   *
   * Created by jose on 04/03/16.
   */
@@ -38,17 +38,19 @@ object Compile {
 
   /**
     * Produces a graphviz dot graph with the primitives, hiding unnecessary sync channels.
+    *
     * @param c connector to be drawn
     * @return dot graph
     */
   def toDot(c:Connector): String = {
     val (edges,bounds) = toDotEdges(c)
-    s"digraph G {\n{ node [margin=0 width=0.2 shape=circle]\n$bounds}\n" ++
-      s"  rankdir=LR;\n  node [margin=0 width=0.2 shape=circle];\n$edges}"
+    s"digraph G {\n{ node [margin=0 width=0.4 height=0.2]\n$bounds}\n" ++
+      s"  rankdir=LR;\n  node [margin=0 width=0.4 height=0.2];\n$edges}"
   }
 
   /**
     * Produces a runnable [[picc]] connector based on given [[paramConnectors]] connector
+    *
     * @param c [[picc]] connector
     * @return [[paramConnectors]] connector
     */
@@ -71,6 +73,7 @@ object Compile {
     seed = 0
     val g = redGraph(toGraph(Eval.reduce(c)))
     val res = new StringBuilder
+    var comps = List[String]()
     for (e <- g.edges) {
       for (i <- e.ins; o <- e.outs)
         res append s"  $i -> $o [label=${e.prim.name}];\n"
@@ -80,13 +83,18 @@ object Compile {
       if (e.outs.isEmpty && e.ins.size>1)
         for (i <- e.ins; o <- e.ins; if e.ins.indexOf(i)<e.ins.indexOf(o))
           res append s"""  $i -> $o [dir=both,arrowhead="inv",arrowtail="inv",label="${e.prim.name}"];\n"""
-      if (e.ins.isEmpty && e.outs.size==1)
-        res append s"""  ${e.prim.name+"_"+e.outs.head} -> ${e.outs.head};\n"""
-      if (e.outs.isEmpty && e.ins.size==1)
-        res append s"""  ${e.ins.head} -> ${e.prim.name+"_"+e.ins.head};\n"""
+      if (e.ins.isEmpty && e.outs.size == 1) {
+        res append s"""  ${e.prim.name + "_" + e.outs.head} -> ${e.outs.head};\n"""
+        comps ::= e.prim.name + "_" + e.outs.head
+      }
+      if (e.outs.isEmpty && e.ins.size==1) {
+        res append s"""  ${e.ins.head} -> ${e.prim.name + "_" + e.ins.head};\n"""
+        comps ::= e.prim.name + "_" + e.ins.head
+      }
     }
     val bounds = new StringBuilder
-    for (i <- g.ins ++ g.outs)
+
+    for (i <- g.ins ++ g.outs ++ comps)
       bounds append s"  $i [style=filled]\n"
     (res.toString,bounds.toString)
   }

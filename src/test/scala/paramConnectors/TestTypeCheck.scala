@@ -15,6 +15,27 @@ class TestTypeCheck {
   val y: I = "y"
   val n: I = "n"
 
+  // sequence of n fifos
+  val seqfifo = lam(n,Tr(n - 1, sym(n - 1,1) & (fifo^n)))
+  // rearrange 2*n entries: from n+n to 2+2+...+2 (n times)
+  val zip = lam(n,
+    Tr( 2*n*(n-1),
+      (((id^(n-x)) * (swap^x) * (id^(n-x)))^x<--n) &
+        sym(2*n*(n-1),2*n)
+    ))
+  // rearrange 2*n entries: from 2+2+...+2 (n times) to n+n
+  val unzip = lam(n,
+    Tr( 2*n*(n-1),
+      (((id^(x+1)) * (swap^(n-x-1)) * (id^(x+1)))^(x,n)) &
+        sym(2*n*(n-1),2*n)
+    ))
+  // alternate flow between n flows (http://reo.project.cwi.nl/webreo/generated/sequencer/frameset.htm)
+  val sequencer = lam(n, (((dupl^n) & unzip(n)) *
+    Tr(n, sym(n-1,1) & ((fifofull & dupl) * ((fifo & dupl)^(n-1))) & unzip(n) ) ) &
+    ((id^n) * (zip(n) & (drain^n))))
+
+
+
   @Test def TestTypeCheck() {
     testOK( fifo^3,
       "1^3 -> 1^3 | (3 >= 0) & (1 >= 0) & (1 >= 0)", // type after derivation tree
@@ -123,20 +144,6 @@ class TestTypeCheck {
       "© 0 -> 0")
 
     // complex examples from the paper
-    val seqfifo = lam(n,Tr(n - 1, sym(n - 1,1) & (fifo^n)))
-    val zip = lam(n,
-      Tr( 2*n*(n-1),
-        (((id^(n-x)) * (swap^x) * (id^(n-x)))^x<--n) &
-        sym(2*n*(n-1),2*n)
-      ))
-    val unzip = lam(n,
-      Tr( 2*n*(n-1),
-        (((id^(x+1)) * (swap^(n-x-1)) * (id^(x+1)))^(x,n)) &
-        sym(2*n*(n-1),2*n)
-      ))
-    val sequencer = lam(n, (((dupl^n) & unzip(n)) *
-                             Tr(n, sym(n-1,1) & ((fifo & dupl) * ((fifo & dupl)^(n-1))) & unzip(n) ) ) &
-                           ((id^n) * (zip(n) & (Prim("drain",2,0)^n))))
     testOK(seqfifo,
       "∀n:I . x1 -> x2 | ((x1 + (n - 1)) == ((n - 1) + 1)) & ((x2 + (n - 1)) == (1 * n)) & (x1 >= 0) & (x2 >= 0) & ((1 + (n - 1)) == (1 * n)) & (n >= 0) & (1 >= 0) & (1 >= 0)",
 //    "∀n:I . x1 -> x2 | ((x1 + (n - 1)) == ((n - 1) + 1)) & ((x2 + (n - 1)) == (1 * n)) & (x1 >= 0) & (x2 >= 0) & ((1 + (n - 1)) == (1 * n)) & (1 >= 0) & (1 >= 0)",
