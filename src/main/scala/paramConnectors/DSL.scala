@@ -102,6 +102,16 @@ object DSL {
     */
   def compileAndDraw(c:Connector) = picc.graph.Dot(Compile(c))
 
+  /**
+    * Build an html graph of a connector that uses the Springy JavaScript library
+    * (http://getspringy.com)
+    * @param c connector
+    * @return HTML connector
+    */
+  def genHTMLJS(c:Connector) = Compile.toSpringy(c)
+
+
+
   // overall methods to typecheck
   /**
    * Type check a connector (build tree, unify, and solve constraints)

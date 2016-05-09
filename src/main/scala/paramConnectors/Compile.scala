@@ -178,4 +178,78 @@ object Compile {
       val (es2,m2) = redGraphAux(tl,m)
       (edge::es2,m2)
   }
+
+
+  //////////////////////////
+  // generate springy graph
+  //////////////////////////
+  def toSpringy(c:Connector): String = {
+    val (edges,nodes) = toSpringEdges(c)
+    s"""<html>
+<body>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+<script src="springy.js"></script>
+<script src="springyui.js"></script>
+<script>
+var graph = new Springy.Graph();
+graph.addNodes($nodes);
+
+graph.addEdges( $edges );
+
+jQuery(function(){
+  var springy = jQuery('#springydemo').springy({
+    graph: graph
+  });
+});
+</script>
+
+<canvas id="springydemo" width="800" height="600" />
+</body>
+</html>"""
+  }
+
+  private def toSpringEdges(c:Connector): (String,String) = {
+    seed = 0
+    val g = redGraph(toGraph(Eval.reduce(c)))
+    val nodes  = scala.collection.mutable.Set[String]()
+    val bounds = scala.collection.mutable.Set[String]()
+    var edges  = List[String]()
+    for (e <- g.edges) {
+      for (i <- e.ins; o <- e.outs) {
+        edges ::= s"['$i', '$o', {label: '${e.prim.name}'}]"
+        nodes += i.toString
+        nodes += o.toString
+      }
+      if (e.ins.isEmpty && e.outs.size>1)
+        for (i <- e.outs; o <- e.outs; if e.outs.indexOf(i)<e.outs.indexOf(o)) {
+          edges ::= s"['$i', '$o', {label: '${e.prim.name}'}]"
+          edges ::= s"['$o', '$i']"
+          nodes += i.toString
+        }
+      if (e.outs.isEmpty && e.ins.size>1)
+        for (i <- e.ins; o <- e.ins; if e.ins.indexOf(i)<e.ins.indexOf(o)) {
+          edges ::= s"['$i', '$o', {label: '${e.prim.name}'}]"
+          edges ::= s"['$o', '$i']"
+          nodes += i.toString
+        }
+      if (e.ins.isEmpty && e.outs.size == 1) {
+        edges ::= s"['${e.prim.name + "_" + e.outs.head}', '${e.outs.head}']"
+        bounds += e.prim.name + "_" + e.outs.head
+      }
+      if (e.outs.isEmpty && e.ins.size==1) {
+        edges ::= s"['${e.prim.name + "_" + e.ins.head}', '${e.ins.head}']"
+        bounds += e.prim.name + "_" + e.ins.head
+      }
+    }
+    bounds ++= (g.ins ++ g.outs).map(_.toString)
+    nodes --= bounds
+
+    (edges.mkString(", "),(nodes++bounds).map(x=>s"'$x'").mkString(", "))
+//    val bounds = new StringBuilder
+//    for (i <- g.ins ++ g.outs ++ comps)
+//      bounds append s"  $i [style=filled]\n"
+//    (res.toString,bounds.toString)
+  }
+
+
 }

@@ -35,7 +35,6 @@ class TestTypeCheck {
     ((id^n) * (zip(n) & (drain^n))))
 
 
-
   @Test def TestTypeCheck() {
     testOK( fifo^3,
       "1^3 -> 1^3 | (3 >= 0) & (1 >= 0) & (1 >= 0)", // type after derivation tree
