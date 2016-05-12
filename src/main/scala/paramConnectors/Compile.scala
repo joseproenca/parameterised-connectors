@@ -43,9 +43,10 @@ object Compile {
     * @return dot graph
     */
   def toDot(c:Connector): String = {
-    val (edges,bounds) = toDotEdges(c)
-    s"digraph G {\n{ node [margin=0 width=0.4 height=0.2]\n$bounds}\n" ++
-      s"  rankdir=LR;\n  node [margin=0 width=0.4 height=0.2];\n$edges}"
+    val (edges,ins,outs,comps) = toDotEdges(c)
+    s"digraph G {\n  rankdir=LR;\n  node [margin=0 width=0.4 height=0.2]\n"++
+      s"{ rank=min;\n  node [style=filled,shape=doublecircle]\n$ins}\n"++
+      s"{ rank=max;\n  node [style=filled,shape=doublecircle]\n$outs}\n  $comps\n$edges}"
   }
 
   /**
@@ -69,34 +70,48 @@ object Compile {
   }
   private var seed:Int = 0 // global variable
 
-  private def toDotEdges(c:Connector): (String,String) = {
+  private def toDotEdges(c:Connector): (String,String,String,String) = {
     seed = 0
     val g = redGraph(toGraph(Eval.reduce(c)))
     val res = new StringBuilder
     var comps = List[String]()
     for (e <- g.edges) {
-      for (i <- e.ins; o <- e.outs)
+      for (i <- e.ins; o <- e.outs) // in to out
         res append s"  $i -> $o [label=${e.prim.name}];\n"
-      if (e.ins.isEmpty && e.outs.size>1)
-        for (i <- e.outs; o <- e.outs; if e.outs.indexOf(i)<e.outs.indexOf(o))
-          res append s"""  $i -> $o [dir=both,label="${e.prim.name}"];\n"""
-      if (e.outs.isEmpty && e.ins.size>1)
-        for (i <- e.ins; o <- e.ins; if e.ins.indexOf(i)<e.ins.indexOf(o))
-          res append s"""  $i -> $o [dir=both,arrowhead="inv",arrowtail="inv",label="${e.prim.name}"];\n"""
-      if (e.ins.isEmpty && e.outs.size == 1) {
+      if (e.ins.isEmpty && e.outs.size>1) { // only outs
+        //        for (i <- e.outs; o <- e.outs; if e.outs.indexOf(i)<e.outs.indexOf(o))
+        //          res append s"""  $i -> $o [dir=both,label="${e.prim.name}"];\n"""
+        val p = e.prim.name+"_"+e.outs.mkString("_")
+        res append s"  $p [shape=none];\n"
+        for (o <- e.outs) res append s"  $o -> $p [arrowsize=0.7];\n"
+      }
+      if (e.outs.isEmpty && e.ins.size>1) { // only ins
+//        for (i <- e.ins; o <- e.ins; if e.ins.indexOf(i) < e.ins.indexOf(o))
+//          res append s  $i -> $o [dir=both,arrowhead="inv",arrowtail="inv",label="${e.prim.name}"];\n"""
+        val p = e.prim.name+"_"+e.ins.mkString("_")
+          res append s"  $p [shape=none];\n"
+          for (i <- e.ins) res append s"  $i -> $p [arrowsize=0.7];\n"
+      }
+      if (e.ins.isEmpty && e.outs.size == 1) { // only 1 out (producer)
         res append s"""  ${e.prim.name + "_" + e.outs.head} -> ${e.outs.head};\n"""
         comps ::= e.prim.name + "_" + e.outs.head
       }
-      if (e.outs.isEmpty && e.ins.size==1) {
+      if (e.outs.isEmpty && e.ins.size==1) { // only 1 in (consumer)
         res append s"""  ${e.ins.head} -> ${e.prim.name + "_" + e.ins.head};\n"""
         comps ::= e.prim.name + "_" + e.ins.head
       }
     }
-    val bounds = new StringBuilder
-
-    for (i <- g.ins ++ g.outs ++ comps)
-      bounds append s"  $i [style=filled]\n"
-    (res.toString,bounds.toString)
+    val ins   =
+      if (g.ins.size<=1) "  "++g.ins.mkString++"\n"
+      else "  "++g.ins.mkString(" -> ")++" [style=invis];\n"// new StringBuilder
+    val outs  =
+      if (g.outs.size<=1) "  "++g.outs.mkString++"\n"
+      else "  "++g.outs.mkString(" -> ")++" [style=invis];\n"//new StringBuilder
+    val compb = new StringBuilder
+//    for (n <- g.ins)  ins  append s"  $n;\n"
+//    for (n <- g.outs) outs append s"  $n;\n"
+    for (n <- comps) compb append s"  $n [margin=0.05,style=filled,shape=rect];\n"
+    (res.toString,ins.toString,outs.toString,compb.toString)
   }
 
 
@@ -153,7 +168,7 @@ object Compile {
   }
 
   private def redGraph(graph: Graph): Graph = {
-    val (es,m) = redGraphAux(graph.edges,List())
+    val (es,m) = redGraphAux(graph.edges,List(),graph.ins.toSet)
     var res = Graph(es,graph.ins,graph.outs)
     var map = m
     while (map.nonEmpty) {
@@ -168,14 +183,14 @@ object Compile {
     res
   }
 
-  def redGraphAux(es:List[Edge],m:List[(Int,Int)]): (List[Edge],List[(Int,Int)]) = es match {
+  def redGraphAux(es:List[Edge],m:List[(Int,Int)],ins:Set[Int]): (List[Edge],List[(Int,Int)]) = es match {
     case Nil => (es,m)
-    case Edge(Prim("sync",_,_,_),List(in),List(out))::tl =>
+    case Edge(Prim("sync",_,_,_),List(in),List(out))::tl if !ins.contains(in)=>
       val pair = out->in
-      val (es2,m2) = redGraphAux(tl,m)
+      val (es2,m2) = redGraphAux(tl,m,ins)
       (es2,pair::m2)
     case edge::tl =>
-      val (es2,m2) = redGraphAux(tl,m)
+      val (es2,m2) = redGraphAux(tl,m,ins)
       (edge::es2,m2)
   }
 
