@@ -33,6 +33,11 @@ class TestTypeCheck {
   val sequencer = lam(n, (((dupl^n) & unzip(n)) *
     Tr(n, sym(n-1,1) & ((fifofull & dupl) * ((fifo & dupl)^(n-1))) & unzip(n) ) ) &
     ((id^n) * (zip(n) & (drain^n))))
+  // n-ary exrouter
+  val nexrouter = lam(n, Prim("dupl",1,n+1) &
+    (((lossy & dupl)^n) & unzip(n))*id &
+    (id^(n+1))*(dupl^(n-1))*id &
+    (id^n)*(drain^n) )
 
 
   @Test def TestTypeCheck() {

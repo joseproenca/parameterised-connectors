@@ -28,6 +28,7 @@ object Compile {
     case ("fifofull",1,1,_) => new Fifo(in.head,out.head,Some(1))
     case ("lossy",1,1,_) => new Lossy(in.head,out.head)
     case ("dupl",1,2,_) => new Sync(in.head,out.head) ++ new Sync(in.head,out.tail.head)
+//    case ("dupl",1,n,_) => (for (o<-out) yield new Sync(in.head,o)).foldRight(new Sync("a","b"))(_++_)
     case ("merger",2,1,_) => new NMerger(in,out.head)
     case ("drain",2,0,_) => new SDrain(in.head,in.tail.head)
     case ("writer",0,1,Some(l:List[Any])) => new Writer(out.head,l)
@@ -46,7 +47,7 @@ object Compile {
     val (edges,ins,outs,comps) = toDotEdges(c)
     s"digraph G {\n  rankdir=LR;\n  node [margin=0 width=0.4 height=0.2]\n"++
       s"{ rank=min;\n  node [style=filled,shape=doublecircle]\n$ins}\n"++
-      s"{ rank=max;\n  node [style=filled,shape=doublecircle]\n$outs}\n  $comps\n$edges}"
+      s"{ rank=max;\n  node [style=filled,shape=doublecircle]\n$outs}\n$comps\n$edges}"
   }
 
   /**
@@ -71,7 +72,6 @@ object Compile {
   private var seed:Int = 0 // global variable
 
   private def toDotEdges(c:Connector): (String,String,String,String) = {
-    seed = 0
     val g = redGraph(toGraph(Eval.reduce(c)))
     val res = new StringBuilder
     var comps = List[String]()
@@ -168,6 +168,7 @@ object Compile {
   }
 
   private def redGraph(graph: Graph): Graph = {
+    seed = 0
     val (es,m) = redGraphAux(graph.edges,List(),graph.ins.toSet)
     var res = Graph(es,graph.ins,graph.outs)
     var map = m
@@ -224,7 +225,6 @@ jQuery(function(){
   }
 
   private def toSpringEdges(c:Connector): (String,String) = {
-    seed = 0
     val g = redGraph(toGraph(Eval.reduce(c)))
     val nodes  = scala.collection.mutable.Set[String]()
     val bounds = scala.collection.mutable.Set[String]()
