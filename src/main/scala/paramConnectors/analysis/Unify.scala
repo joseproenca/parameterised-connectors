@@ -1,6 +1,7 @@
-package paramConnectors
+package paramConnectors.analysis
 
-import paramConnectors.TypeCheck.TypeCheckException
+import paramConnectors._
+import TypeCheck.TypeCheckException
 
 /**
  * Created by jose on 20/05/15.
@@ -12,6 +13,7 @@ object Unify {
    * Simplifies a given constraint and searches for a unification.
    * The result is general unification (a substitution) and a constraint to be postponed to a solver.
    * It also throws an exception if the constraint is clearly unsatisfiable.
+   *
    * @param const constraint where a unification is searched for.
    * @return a general unification and postponed constraints.
    */

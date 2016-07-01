@@ -3,8 +3,10 @@ package paramConnectors
 import org.junit.Test
 import org.junit.Assert._
 import paramConnectors.DSL._
-import paramConnectors.Solver.UnhandledOperException
-import paramConnectors.TypeCheck.TypeCheckException
+import paramConnectors.analysis._
+import Solver.UnhandledOperException
+import TypeCheck.TypeCheckException
+import Repository._
 
 /**
  * Created by jose on 18/05/15.
@@ -14,30 +16,6 @@ class TestTypeCheck {
   val x: I = "x"
   val y: I = "y"
   val n: I = "n"
-
-  // sequence of n fifos
-  val seqfifo = lam(n,Tr(n - 1, sym(n - 1,1) & (fifo^n)))
-  // rearrange 2*n entries: from n+n to 2+2+...+2 (n times)
-  val zip = lam(n,
-    Tr( 2*n*(n-1),
-      (((id^(n-x)) * (swap^x) * (id^(n-x)))^x<--n) &
-        sym(2*n*(n-1),2*n)
-    ))
-  // rearrange 2*n entries: from 2+2+...+2 (n times) to n+n
-  val unzip = lam(n,
-    Tr( 2*n*(n-1),
-      (((id^(x+1)) * (swap^(n-x-1)) * (id^(x+1)))^(x,n)) &
-        sym(2*n*(n-1),2*n)
-    ))
-  // alternate flow between n flows (http://reo.project.cwi.nl/webreo/generated/sequencer/frameset.htm)
-  val sequencer = lam(n, (((dupl^n) & unzip(n)) *
-    Tr(n, sym(n-1,1) & ((fifofull & dupl) * ((fifo & dupl)^(n-1))) & unzip(n) ) ) &
-    ((id^n) * (zip(n) & (drain^n))))
-  // n-ary exrouter
-  val nexrouter = lam(n, Prim("dupl",1,n+1) &
-    (((lossy & dupl)^n) & unzip(n))*id &
-    (id^(n+1))*(dupl^(n-1))*id &
-    (id^n)*(drain^n) )
 
 
   @Test def TestTypeCheck() {

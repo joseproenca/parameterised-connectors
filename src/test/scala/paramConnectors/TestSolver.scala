@@ -3,6 +3,7 @@ package paramConnectors
 import org.junit.Assert._
 import org.junit.Test
 import DSL._
+import paramConnectors.analysis.{Solver, Show}
 
 /**
  * Created by jose on 08/06/15.

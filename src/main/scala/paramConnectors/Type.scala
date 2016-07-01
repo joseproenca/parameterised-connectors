@@ -1,12 +1,15 @@
 package paramConnectors
 
+import paramConnectors.analysis.Show
+
 /**
- * Created by jose on 26/05/15.
+  * Created by jose on 26/05/15.
  */
 
 
 /**
  * Type of a parameterised connector
+ *
  * @param args universally quantified variables with types used by i and j
  * @param i input interface
  * @param j output interface
@@ -21,6 +24,7 @@ case class Type(args:Arguments, i:Interface, j:Interface, const:BExpr, isGeneral
 /**
  * Sequence of pairs "variable name" -> "Type name".
  * Similar to a context, except order matters (and it is more general with the supported types).
+ *
  * @param vars pars of variables (name,type).
  */
 case class Arguments(vars:List[Var]) {

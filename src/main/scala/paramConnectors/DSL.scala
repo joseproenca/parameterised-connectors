@@ -1,8 +1,10 @@
 package paramConnectors
 
+import java.io.File
 import java.util
 
-import paramConnectors.TypeCheck.TypeCheckException
+import paramConnectors.analysis._
+import TypeCheck.TypeCheckException
 import scala.language.implicitConversions
 
 /**
@@ -38,24 +40,17 @@ object DSL {
   val dupl = Prim("dupl",1,2)
   val merger = Prim("merger",2,1)
   val drain = Prim("drain",2,0)
-  def writer(l:List[Any]) = Prim("writer",0,1,Some(l))
-  def writer(v:Int)    = Prim("writer",0,1,Some(List(v)))
-  def writer(v:String) = Prim("writer",0,1,Some(List(v)))
-  def reader(n:Int) = Prim("reader",1,0,Some(n))
-
-  // examples of connectors
-  val alternator = dupl*dupl & id*drain*fifo & merger
-  val exrouter = dupl & dupl*id & (lossy*lossy & dupl*dupl & id*swap*id & id*id*merger)*id & id*id*drain
-  val fifos = dupl & fifo*fifo
-
-  def seq(i:Interface, c:Connector, x:I, n:IExpr) =
-    Trace(Repl(i,n-1), (c^(x<--n)) & sym(Repl(i,n-1),i) ) | n>0
-  def seq(i:Interface, c:Connector, n:IExpr) =
-    Trace(Repl(i,n-1), (c^n) & sym(Repl(i,n-1),i) ) | n>0
 
   // included for the demo at FACS'15
   val x="x":I; val y="y":I; val z="z":I; val n="n":I; val b="b":B; val c="c":B;
 
+  // methods to (instantiate and) simplify a connector //
+  /**
+    * Instantiate (make concrete) and simplify a connector
+    *
+    * @param c connector to be  simplified
+    */
+  def simplify(c:Connector) = analysis.Simplify(c)
 
   // methods to execute a connector //
   /**
@@ -90,6 +85,7 @@ object DSL {
 
   /**
     * Build a dot-graph of a connector
+    *
     * @param c connector
     * @return dot graph
     */
@@ -97,6 +93,7 @@ object DSL {
 
   /**
     * Build a runnable [[picc]] connector, and use it to produce a dot-graph
+    *
     * @param c connector
     * @return dot graphs
     */
@@ -105,10 +102,11 @@ object DSL {
   /**
     * Build an html graph of a connector that uses the Springy JavaScript library
     * (http://getspringy.com)
+    *
     * @param c connector
-    * @return HTML connector
+    * @param file file name to output the html document
     */
-  def genHTMLJS(c:Connector) = Compile.toSpringy(c)
+  def genHTML(c:Connector, file:String) = Compile.toSpringyFile(c,new File(file))
 
 
 

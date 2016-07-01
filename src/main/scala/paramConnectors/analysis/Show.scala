@@ -1,4 +1,6 @@
-package paramConnectors
+package paramConnectors.analysis
+
+import paramConnectors._
 
 object Show {
   def apply(con: Connector): String = con match {
@@ -105,8 +107,8 @@ object Show {
     case Symmetry(i, j) => s"sym(${apply(i)},${apply(j)})"
     case Trace(i, c)    => s"Tr(${apply(i)},${source(c)})"
     case Prim(name,_,_,_) => name
-    case Exp(a, c)  => s"${showP(c)}^${showP(a)}"
-    case ExpX(x, a, c)  => s"(${showSP(c)}^(${showP(x)}<--${showP(a)})"
+    case Exp(a, c)  => s"${showSP(c)}^${showP(a)}"
+    case ExpX(x, a, c)  => s"(${showSP(c)}^(${showP(x)}<--${showP(a)}))"
     case Choice(b, c1, c2) => s"${showP(b)} ? ${showSP(c1)} + ${showSP(c2)}"
     //s"if ${showP(b)} then ${showP(c1)} else ${showP(c2)}"
     case IAbs(x, c)     => s"lam(${apply(x)},${source(c)})"

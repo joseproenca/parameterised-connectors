@@ -1,16 +1,17 @@
-package paramConnectors
+package paramConnectors.analysis
 
-import org.chocosolver.solver.search.loop.monitors.SearchMonitorFactory
-import org.chocosolver.solver.{Solver => CSolver}
 import org.chocosolver.solver.constraints.Constraint
+import org.chocosolver.solver.constraints.IntConstraintFactory._
+import org.chocosolver.solver.constraints.LogicalConstraintFactory._
+import org.chocosolver.solver.search.loop.monitors.SearchMonitorFactory
 import org.chocosolver.solver.search.strategy.IntStrategyFactory
 import org.chocosolver.solver.variables.{BoolVar, IntVar, VariableFactory}
-import org.chocosolver.solver.constraints.LogicalConstraintFactory._
-import org.chocosolver.solver.constraints.IntConstraintFactory._
+import org.chocosolver.solver.{Solver => CSolver}
+import paramConnectors._
 
 
 /**
- * Created by jose on 07/06/15.
+  * Created by jose on 07/06/15.
  */
 object Solver {
 
@@ -30,6 +31,7 @@ object Solver {
 
   /**
    * Solve a boolean constraint with integers using the Choco library.
+ *
    * @param bExpr boolean constraint to be solved
    * @return a substitution if a solution is found, or None otherwise.
    *         The substitution is marked as "concrete" if more than 1 solution exist.
@@ -70,6 +72,7 @@ object Solver {
    * The relevant vars are given by the free variables (not quantified) in the interface of the type.
    * CORRECTION: relevant vars are all vars in the interface.
    * Possible problem: second search for more solutions can be expensive!
+ *
    * @param typ type used to extract constraints and relevant vars
    * @return substitution if a solution is found, or None otherwise, marked as "concrete" if applicable.
    */

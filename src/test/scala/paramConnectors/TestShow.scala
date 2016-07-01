@@ -3,6 +3,7 @@ package paramConnectors
 import org.junit.Test
 import org.junit.Assert._
 import DSL._
+import paramConnectors.analysis.Show
 import picc.DSL._
 
 class TestShow {

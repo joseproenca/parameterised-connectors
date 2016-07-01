@@ -1,6 +1,7 @@
 package paramConnectors
 
-import paramConnectors.TypeCheck.TypeCheckException
+import paramConnectors.analysis.{Show, TypeCheck}
+import TypeCheck.TypeCheckException
 
 sealed abstract class Connector {
   // helpers for the DSL
@@ -9,6 +10,9 @@ sealed abstract class Connector {
   def ^(that:IExpr) = Exp(that,this)
   def ^(x:IVar,that:IExpr) = ExpX(x,that,this)
   def ^(ew:ExpWrap) = ExpX(ew.x,ew.to,this)
+  def :^(that:IExpr) = Exp(that,this)           // experimenting with precedence
+  def :^(x:IVar,that:IExpr) = ExpX(x,that,this) // experimenting with precedence
+  def :^(ew:ExpWrap) = ExpX(ew.x,ew.to,this)    // experimenting with precedence
   def apply(that:IExpr): Connector = IApp(this,that)
   def apply(that:BExpr): Connector = BApp(this,that)
   def |(phi:BExpr): Connector = Restr(this,phi)

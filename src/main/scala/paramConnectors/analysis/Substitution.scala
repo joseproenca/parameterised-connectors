@@ -1,4 +1,6 @@
-package paramConnectors
+package paramConnectors.analysis
+
+import paramConnectors._
 
 import scala.collection.immutable.Nil
 

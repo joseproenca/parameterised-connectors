@@ -1,6 +1,7 @@
-package paramConnectors
+package paramConnectors.analysis
 
-import paramConnectors.TypeCheck.TypeCheckException
+import paramConnectors._
+import paramConnectors.analysis.TypeCheck.TypeCheckException
 
 /**
  * Created by jose on 18/05/15.
@@ -234,6 +235,7 @@ object Eval {
 
   /**
     * Finds an instance of the connector, and simplifies it
+    *
     * @param c connector to be reduced
     * @return reduced connector
     */

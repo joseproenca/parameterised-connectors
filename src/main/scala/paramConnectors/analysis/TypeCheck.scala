@@ -1,6 +1,7 @@
-package paramConnectors
+package paramConnectors.analysis
 
-import Utils.interfaceSem
+import paramConnectors.Utils._
+import paramConnectors._
 
 /**
  * Created by jose on 17/05/15.

@@ -1,4 +1,6 @@
-package paramConnectors
+package paramConnectors.analysis
+
+import paramConnectors._
 
 import scala.collection.immutable.Bag
 
@@ -86,6 +88,7 @@ object Simplify {
 
   /**
    * Simplifies an expression by writing it as a polynomial and adding coefficients.
+ *
    * @param e expressions to be simplified
    * @return simplified expression
    */
@@ -100,6 +103,7 @@ object Simplify {
 
   /**
    * Simplifies a type by evaluating and writing it as a polynomial and adding coefficients
+ *
    * @param t type being simplified
    * @return simplified type
    */
@@ -296,6 +300,7 @@ object Simplify {
   /**
     * Simplify a (family of) connector(s) by applying simple connector equalities.
     * It assumes the connector is well-typed
+ *
     * @param con connector to be simplified
     * @return simplified connector
     */
