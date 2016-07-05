@@ -45,14 +45,14 @@ object Eval {
       case (e3,IVal(1)) => e3
       case (ev1,ev2) => Mul(ev1,ev2)
     }
-//    case Div(e1, e2) => (apply(e1),apply(e2)) match {
-//      case (IVal(a),IVal(b)) => IVal(a/b)
-//      case (IVal(0),_) => IVal(0)
-//      case (_,IVal(0)) => throw new TypeCheckException("Invalid constraints: division by 0 - "+Show(Div(e1,e2)))
-//      case (IVal(1),_) => IVal(0) // eucledian division of 1 by an integer is always 0
-//      case (e3,IVal(1)) => e3
-//      case (ev1,ev2) => Div(ev1,ev2)
-//    }
+    case Div(e1, e2) => (apply(e1),apply(e2)) match {
+      case (IVal(a),IVal(b)) => IVal(a/b) // integer/eucledian division
+      case (IVal(0),_) => IVal(0)
+      case (_,IVal(0)) => throw new TypeCheckException("Invalid constraints: division by 0 - "+Show(Div(e1,e2)))
+      case (IVal(1),_) => IVal(0) // eucledian division of 1 by an integer is always 0
+      case (e3,IVal(1)) => e3
+      case (ev1,ev2) => Div(ev1,ev2)
+    }
     case Sum(x, from, to, newe) => (apply(from),apply(to)) match {
       case (IVal(a),IVal(b)) =>
         var res: IExpr = IVal(0)

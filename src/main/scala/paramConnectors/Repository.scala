@@ -60,6 +60,8 @@ object Repository {
     (id^n)*Prim("merger",n,1)*id &
     (id^n)*drain )
 
-//  val ndupl = lam(n, Trace( 2, ((dupl * (id^(x-2)))^(x<--n)) & sym(2,1) ))
+//  val ndupl = lam(n, Trace( NN, ((dupl * (id^x))^(x<--(n-1))) & sym(NN,n) ))
+//  val dupl4 = lam(n, Trace( 5 , ((dupl * (id^x))^(x<--3))     & sym(5,4) ))
+  val ndupl = lam(n, Tr( ((n+1)*(n-2))/2, ((dupl * (id^x))^(x<--(n-1))) & sym( ((n+1)*(n-2))/2 ,n) ))
 
 }

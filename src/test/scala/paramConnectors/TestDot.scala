@@ -3,6 +3,7 @@ package paramConnectors
 import org.junit.Assert._
 import org.junit.Test
 import paramConnectors.DSL._
+import paramConnectors.Repository._
 
 /**
   * Created by jose on 13/05/16.

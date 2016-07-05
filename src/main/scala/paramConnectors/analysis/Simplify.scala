@@ -17,6 +17,18 @@ object Simplify {
   implicit private val bagStringConf = Bag.configuration.compact[String]
 
   def iexpr2lits(e:IExpr): OptLits = e match {
+      // EXPERIMENTS with DIV
+//    case Add(Div(e1,e2),Div(e3,e4)) if e2==e4 => iexpr2lits(Div(Add(e1,e3),e2))
+//    case Add(Div(e1,e2),Div(e3,e4))           => iexpr2lits(Div(Add(Mul(e1,e4),Mul(e3,e2)),Mul(e2,e4)))
+//    case Add(Div(e1,e2),e3)                   => iexpr2lits(Div(Add(e1,Mul(e3,e2)),e3))
+//    case Add(e1,Div(e2,e3))                   => iexpr2lits(Div(Add(Mul(e1,e3),e2),e3))
+//    case Sub(Div(e1,e2),Div(e3,e4)) if e2==e4 => iexpr2lits(Div(Sub(e1,e3),e2))
+//    case Sub(Div(e1,e2),Div(e3,e4))           => iexpr2lits(Div(Sub(Mul(e1,e4),Mul(e3,e2)),Mul(e2,e4)))
+//    case Sub(Div(e1,e2),e3)                   => iexpr2lits(Div(Sub(e1,Mul(e3,e2)),e3))
+//    case Sub(e1,Div(e2,e3))                   => iexpr2lits(Div(Sub(Mul(e1,e3),e2),e3))
+//    case Mul(Div(e1,e2),e3) => iexpr2lits(Div(Mul(e1,e3),e2))
+//    case Mul(e1,Div(e2,e3)) => iexpr2lits(Div(Mul(e1,e2),e3))
+      //
     case IVal(n) =>
       OptLits(Lits(Map(Bag[String]() -> n)),Set())
     case IVar(x) =>
@@ -52,8 +64,8 @@ object Simplify {
 //        newmap = newmap + (v1 -> (k1/e2))
 //      }
 //      OptLits(Lits(newmap),lits1.rest)
-//    case Div(_,_) =>
-//      OptLits(Lits(Map(Bag[String]() -> 0)),Set(e))
+    case Div(_,_) => // postpone (non treatable)
+      OptLits(Lits(Map(Bag[String]() -> 0)),Set(e))
     case Sum(x, from, to, e2) =>
       val simpFrom = apply(from)
       val simpTo   = apply(to)
@@ -88,8 +100,8 @@ object Simplify {
 
   /**
    * Simplifies an expression by writing it as a polynomial and adding coefficients.
- *
-   * @param e expressions to be simplified
+    *
+    * @param e expressions to be simplified
    * @return simplified expression
    */
   def apply(e:IExpr): IExpr =
@@ -103,8 +115,8 @@ object Simplify {
 
   /**
    * Simplifies a type by evaluating and writing it as a polynomial and adding coefficients
- *
-   * @param t type being simplified
+    *
+    * @param t type being simplified
    * @return simplified type
    */
   def apply(t:Type): Type = {
@@ -121,6 +133,10 @@ object Simplify {
     case And(es) => And(es.map(simpAux))
     case Or(e1, e2) => Or(simpAux(e1),simpAux(e2))
     case Not(e1) => Not(simpAux(e1))
+      // Div experiments seem too specific.
+    case EQ(Div(e1,e2), e3) => simpAux(EQ(e1,Mul(e2,e3)))
+    case EQ(e1,Div(e2, e3)) => simpAux(EQ(Mul(e1,e3),e2))
+      //
     case EQ(e1, e2) => //EQ(apply(Sub(e1,e2)),IVal(0))
       val eq = iexpr2lits(Eval(Sub(e1,e2)))
       optimiseEq(eq)
@@ -144,9 +160,15 @@ object Simplify {
     case AndN(x,from,to,expr) => AndN(x,from,to,simpAux(expr))
   }
 
-  // drop coeficients from inequations when compared to 0.
+  // drop coeficients from inequations when compared to 0 - with shape "a*x OP 0".
   private def optimiseIneq(e1:IExpr,e2:IExpr,const:(IExpr,IExpr)=>BExpr): BExpr = {
     (apply(e1),apply(e2)) match {
+        // div experiments seem too specific.
+      case (Div(e3,IVal(n)),e4) if n > 0 => optimiseIneq(e3,Mul(IVal(n),e4),const)
+      case (e3,Div(e4,IVal(n))) if n > 0 => optimiseIneq(Mul(IVal(n),e3),e4,const)
+      case (Div(e3,IVal(n)),e4) if n < 0 => optimiseIneq(neg(e3),Mul(IVal(-n),e4),const)
+      case (e3,Div(e4,IVal(n))) if n < 0 => optimiseIneq(Mul(IVal(-n),e3),neg(e4),const)
+        //
       case (IVal(0),e3@Mul(_,_)) => const(IVal(0),reduceZ(e3))
       case (e3@Mul(_,_),IVal(0)) => const(reduceZ(e3),IVal(0))
       case (e3,e4) => const(e3,e4)
@@ -193,7 +215,7 @@ object Simplify {
         if (deg  == 1) {
           val twicesum = (Substitution(x,to-IVal(1))(e) + Substitution(x,from)(e)) * (to - from)
 //          println(s"found degree 1: ${Show(r)} - simplifying ${Show(lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2))} == ${Show(IVal(0) - twicesum)}")
-          return simpAux( lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2) === IVal(0) - twicesum )
+          return simpAux( lits2IExpr(OptLits(optLits.lits,optLits.rest-r)) * IVal(2) === neg(twicesum) )
         }
       case Sub(IVal(0), Sum(x,from,to,e)) =>
         val simpE    = iexpr2lits(Eval(e))
@@ -227,7 +249,7 @@ object Simplify {
         else todo = Some(res)
       }
       if ((c/gcdc) == 1 && v.size == 1) {
-        val res = EQ( IVar(v.head), lits2IExpr(OptLits(Lits((optLits.lits.map - v).mapValues(-_/gcdc)),optLits.rest.map(Mul(_,IVal(-1))))))
+        val res = EQ( IVar(v.head), lits2IExpr(OptLits(Lits((optLits.lits.map - v).mapValues(-_/gcdc)),optLits.rest.map(neg(_)))))
 //        println(s"#### checking if ${v.head} is a temp variable.")
         if (Utils.isGenVar(v.head))
           return res
@@ -271,9 +293,15 @@ object Simplify {
   
   private def neg(ls:OptLits): OptLits = {
     val newlits = Lits(ls.lits.map.mapValues(-_))
-    val newrest:Set[IExpr] = for (e <- ls.rest) yield IVal(0) -  e
+    val newrest:Set[IExpr] = for (e <- ls.rest) yield neg(e)
     OptLits(newlits,newrest)
   }
+  private def neg(e:IExpr) = e match {
+    case (Sub(IVal(0),e2)) => e2
+    case _ => IVal(0)-e
+//    case (Mul(IVal(-1),e2)) => e2
+//    case _ => Mul(IVal(-1),e)
+  } //IVal(0) - e
 
   private def gcd(_a:Int, _b:Int): Int = {
     var a = _a; var b = _b
@@ -300,7 +328,7 @@ object Simplify {
   /**
     * Simplify a (family of) connector(s) by applying simple connector equalities.
     * It assumes the connector is well-typed
- *
+    *
     * @param con connector to be simplified
     * @return simplified connector
     */

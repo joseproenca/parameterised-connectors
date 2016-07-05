@@ -51,13 +51,13 @@ object Show {
     case Add(e1,e2) => s"${showP(e1)} + ${showP(e2)}"
     case Sub(e1,e2) => s"${showP(e1)} - ${showP(e2)}"
     case Mul(e1,e2) => s"${showP(e1)} * ${showP(e2)}"
-//    case Div(e1,e2) => s"${showP(e1)} / ${showP(e2)}"
+    case Div(e1,e2) => s"${showP(e1)} / ${showP(e2)}"
     case Sum(x,from,to,e) => s"Σ{${apply(from)} ≤ ${x.x} < ${apply(to)}}${showP(e)}"
     case ITE(b,ifTrue,ifFalse) =>
       s"if ${showP(b)} then ${showP(ifTrue)} else ${showP(ifFalse)}"
   }
   private def showP(exp:IExpr):String = exp match {
-    case Add(_,_) | Sub(_,_) | Mul(_,_) | ITE(_,_,_) => s"(${apply(exp)})"
+    case Add(_,_) | Sub(_,_) | Mul(_,_) | Div(_,_) | ITE(_,_,_) => s"(${apply(exp)})"
     case _ => apply(exp)
   }
 
@@ -78,7 +78,7 @@ object Show {
     case AndN(x,f,t,e) => s"∧{${apply(f)} ≤ ${x.x} < ${apply(t)}}${showP(e)}"
   }
   private def showP(exp:BExpr):String = exp match {
-    case BVal(_) | BVar(_) => apply(exp)
+    case BVal(_) | BVar(_) | Not(_) => apply(exp)
     case _ => s"(${apply(exp)})"
   }
 

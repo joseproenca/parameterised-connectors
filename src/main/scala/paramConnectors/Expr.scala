@@ -12,6 +12,7 @@ sealed abstract class IExpr extends Expr {
   def +(that:IExpr) = Add(this,that)
   def -(that:IExpr) = Sub(this,that)
   def *(that:IExpr) = Mul(this,that)
+  def /(that:IExpr) = Div(this,that)
   def ===(that:IExpr) = EQ(this,that)
   def >(that:IExpr)   = GT(this,that)
   def <(that:IExpr)   = LT(this,that)
@@ -28,7 +29,7 @@ case class IVar(x:String) extends IExpr with Var {
 case class Add(e1:IExpr,e2:IExpr) extends IExpr
 case class Sub(e1:IExpr,e2:IExpr) extends IExpr
 case class Mul(e1:IExpr,e2:IExpr) extends IExpr
-//case class Div(e1:IExpr,e2:IExpr) extends IExpr
+case class Div(e1:IExpr,e2:IExpr) extends IExpr
 // Sum(x,from,to,e) means Sum(from <= x < to)e
 case class Sum(x:IVar,from:IExpr,to:IExpr,e:IExpr) extends IExpr
 case class ITE(b:BExpr,ifTrue:IExpr,ifFalse:IExpr) extends IExpr

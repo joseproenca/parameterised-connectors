@@ -12,6 +12,7 @@ object Utils {
     case Add(e1, e2) => isFree(x,e1) && isFree(x,e2)
     case Sub(e1, e2) => isFree(x,e1) && isFree(x,e2)
     case Mul(e1, e2) => isFree(x,e1) && isFree(x,e2)
+    case Div(e1, e2) => isFree(x,e1) && isFree(x,e2)
     case Sum(`x`, from, to, _) => isFree(x,from) && isFree(x,to)
     case Sum(_, from, to, e2) => isFree(x,from) && isFree(x,to) && isFree(x,e2)
     case ITE(b, ifTrue, ifFalse) => isFree(x,b) && isFree(x,ifTrue) && isFree(x,ifFalse)
@@ -49,6 +50,7 @@ object Utils {
     case Add(e1, e2) => freeVars(e1) ++ freeVars(e2)
     case Sub(e1, e2) => freeVars(e1) ++ freeVars(e2)
     case Mul(e1, e2) => freeVars(e1) ++ freeVars(e2)
+    case Div(e1, e2) => freeVars(e1) ++ freeVars(e2)
     case Sum(x, from, to, e1) => (freeVars(e1)-x) ++ freeVars(from) ++ freeVars(to)
     case ITE(b, ifTrue, ifFalse) => freeVars(b) ++ freeVars(ifTrue) ++ freeVars(ifFalse)
   }

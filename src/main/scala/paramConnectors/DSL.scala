@@ -263,12 +263,15 @@ object DSL {
       if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
       if (rest_3 != BVal(true)) subst_2.get.setConcrete()
       println(s" - [ solution:    $subst_2 ]")
-      // 6 - apply subst_2
+      // 6 - apply subst_2 if solver is an abstract solution
       val type_5 = subst_2.get(type_4)
-      val rest_4 = subst_2.get.getConstBoundedVars(type_5)
-      println(s" - extended with: $rest_4")
-      val type_6 = Eval(Type(type_5.args,type_5.i,type_5.j,type_5.const & rest_4,type_5.isGeneral))
-      println(s" - post-solver:   $type_6")
+      if (type_5.isGeneral) {
+        val rest_4 = subst_2.get.getConstBoundedVars(type_5)
+        println(s" - extended with: $rest_4")
+        val type_6 = Eval(Type(type_5.args, type_5.i, type_5.j, type_5.const & rest_4, type_5.isGeneral))
+        println(s" - post-solver:   $type_6")
+      }
+      else println(s" - solution yields a concrete instance only.")
       // 7 - apply the new substitution to the previous type and eval
       val type_5b = Eval.instantiate(subst_2.get(type_4))
       println(s" - instantiation: $type_5b")

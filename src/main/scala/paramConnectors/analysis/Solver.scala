@@ -31,8 +31,8 @@ object Solver {
 
   /**
    * Solve a boolean constraint with integers using the Choco library.
- *
-   * @param bExpr boolean constraint to be solved
+    *
+    * @param bExpr boolean constraint to be solved
    * @return a substitution if a solution is found, or None otherwise.
    *         The substitution is marked as "concrete" if more than 1 solution exist.
    */
@@ -72,8 +72,8 @@ object Solver {
    * The relevant vars are given by the free variables (not quantified) in the interface of the type.
    * CORRECTION: relevant vars are all vars in the interface.
    * Possible problem: second search for more solutions can be expensive!
- *
-   * @param typ type used to extract constraints and relevant vars
+    *
+    * @param typ type used to extract constraints and relevant vars
    * @return substitution if a solution is found, or None otherwise, marked as "concrete" if applicable.
    */
   def solve(typ:Type)
@@ -97,26 +97,29 @@ object Solver {
         return Some(res)
 
       // set concrete if negating the relevant vars yields more solutions
-      var newExp = typ.const
+//      var newExp = typ.const
+      var toNeg = List[BExpr]()
       val vars:Iterable[Var] = Utils.freeVars(Tensor(typ.i,typ.j)) ++ typ.args.vars //-- typ.args.vars
 //      println(s"#### got relevant vars: ${vars.map(Show.showVar)}")
       for (v <- vars) v match {
         case IVar(x) =>
           if (intVars contains x)
-            newExp = newExp & Not(EQ(IVar(x),IVal(intVars(x).getValue)))
+            toNeg ::= EQ(IVar(x),IVal(intVars(x).getValue))
         case BVar(x) =>
           if (boolVars contains x) {
             if (boolVars(x).getValue == 1)
-              newExp = newExp & Not(BVar(x))
+              toNeg ::= BVar(x)
             else
-              newExp = newExp & BVar(x)
+              toNeg ::= Not(BVar(x))
           }
       }
       if (vars.nonEmpty) {
+        val newExp = typ.const & Not(And(toNeg))
 //        println(s"#### got new expression: ${Show(newExp)}")
         val sndSol = solveAux(newExp)
         if (sndSol.isDefined)
           res.setConcrete()
+//        else println(s"#### 2nd solution not found (general).")
       }
       // return the result
       Some(res)
@@ -180,7 +183,7 @@ object Solver {
     case Add(e1, e2) => combineIExpr(e1,e2,"+")
     case Sub(e1, e2) => combineIExpr(e1,e2,"-")
     case Mul(e1, e2) => combineIExpr(e1,e2,"*")
-//    case Div(e1, e2) => combineIExpr(e1,e2,"/")
+    case Div(e1, e2) => combineIExpr(e1,e2,"/")
     case Sum(x, IVal(from), IVal(to), e) =>
       if (from < to){ // "from" did not reach "to" yet
         val e1 = Substitution(x,IVal(from)).apply(e)

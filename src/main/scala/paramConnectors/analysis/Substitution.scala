@@ -144,6 +144,7 @@ class Substitution(private val items:List[Item]) {
     case Add(e1, e2) => Add(subst(i,e1),subst(i,e2))
     case Sub(e1, e2) => Sub(subst(i,e1),subst(i,e2))
     case Mul(e1, e2) => Mul(subst(i,e1),subst(i,e2))
+    case Div(e1, e2) => Div(subst(i,e1),subst(i,e2))
     case Sum(x, from, to, e) => i match {
       case IItem(`x`, e2) => exp // skip bound variable
       case _ => Sum(x, subst(i, from), subst(i, to), subst(i, e))

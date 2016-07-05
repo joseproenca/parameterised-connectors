@@ -171,6 +171,7 @@ object TypeCheck {
     case Add(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Sub(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Mul(e1, e2) => check(gamma,e1); check(gamma,e2)
+    case Div(e1, e2) => check(gamma,e1); check(gamma,e2)
     case Sum(x,from,to,e) => check(gamma,from) ; check(gamma,to) ; checkAndAddVar(gamma,x,e) //check(gamma.addVar(x),e)
     case ITE(b,ift,iff)   => check(gamma,b) ; check(gamma,ift) ; check(gamma,iff)
   }
