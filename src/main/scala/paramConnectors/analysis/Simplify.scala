@@ -205,6 +205,8 @@ object Simplify {
     degree
   }
 
+  /**
+    * A series of hacks to try to reduce the integer constraints using arithmetic properties. */
   private def optimiseEq(optLits: OptLits): BExpr = {
     // rewrite sums with degree 1 (e.g., Sum_{x in ...} (2x + 3y^2 + 4))
     // by multiplying the average by the number occurrences.
@@ -305,12 +307,14 @@ object Simplify {
 
   private def gcd(_a:Int, _b:Int): Int = {
     var a = _a; var b = _b
-    if (a == 0) return b
-    while (b != 0) {
-      if (a > b)  a = a - b
-      else        b = b - a
+    if (a == 0)  b
+    else {
+      while (b != 0) {
+        if (a > b) a = a - b
+        else b = b - a
+      }
+      a
     }
-    a
   }
   private def gcdm(l:Iterable[Int]): Int = {
     if (l.isEmpty) 1
