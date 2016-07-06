@@ -220,17 +220,19 @@ class TestTypeCheck {
     println(s" - simplified:    $type_4")
     // 5 - solve constraints
     val subst_2 = Solver.solve(type_4)
-    if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
-    if (rest_3 != BVal(true)) subst_2.get.setConcrete()
-    println(s" - [ solution:    $subst_2 ]")
-    // 6 - apply subst_2
-    val type_5 = subst_2.get(type_4)
-    val rest_4 = subst_2.get.getConstBoundedVars(type_5)
+    val subst_3 =
+      if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
+      else if (rest_3 == BVal(true)) subst_2.get
+      else subst_2.get.mkConcrete
+    println(s" - [ solution:    $subst_3 ]")
+    // 6 - apply subst_3
+    val type_5 = subst_3(type_4)
+    val rest_4 = subst_3.getConstBoundedVars(type_5)
     println(s" - extended with: $rest_4")
     val type_6 = Eval(Type(type_5.args,type_5.i,type_5.j,type_5.const & rest_4,type_5.isGeneral))
     println(s" - post-solver:   $type_6")
     // 7 - apply the new substitution to the previous type and eval
-    val type_5b = Eval.instantiate(subst_2.get(type_4))
+    val type_5b = Eval.instantiate(subst_3(type_4))
     println(s" - instantiation: $type_5b")
     // test asserts
     assertEquals(typString,Show(type_1)) // type after derivation tree, before unification

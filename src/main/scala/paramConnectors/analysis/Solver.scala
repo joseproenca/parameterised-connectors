@@ -51,8 +51,8 @@ object Solver {
         res +=(BVar(x), BVal(v.getValue == 1))
       // a substitution is concrete if the constraints have more than 1 solution (more common)
       if (sol.get.nextSolution())
-        res.setConcrete()
-      Some(res)
+        Some(res.mkConcrete)
+      else Some(res)
       //      for (v <- boolVars.values ++ intVars.values)
       //        if (v.isInstantiated)
       //          println(s" - var ${v.getName} = ${v.getValue}")
@@ -118,7 +118,7 @@ object Solver {
 //        println(s"#### got new expression: ${Show(newExp)}")
         val sndSol = solveAux(newExp)
         if (sndSol.isDefined)
-          res.setConcrete()
+          res = res.mkConcrete
 //        else println(s"#### 2nd solution not found (general).")
       }
       // return the result

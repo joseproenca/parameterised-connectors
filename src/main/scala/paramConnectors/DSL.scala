@@ -132,11 +132,13 @@ object DSL {
     val type_4 = Simplify(type_3)
     // 5 - solve constraints
     val subst_2 = Solver.solve(type_4)
-    if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
-    if (rest_3 != BVal(true)) subst_2.get.setConcrete()
-    // 6 - apply subst_2
-    val type_5 = subst_2.get(type_4)
-    val rest_4 = subst_2.get.getConstBoundedVars(type_5)
+    val subst_3 =
+      if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
+      else if (rest_3 == BVal(true)) subst_2.get
+      else subst_2.get.mkConcrete
+    // 6 - apply subst_3
+    val type_5 = subst_3(type_4)
+    val rest_4 = subst_3.getConstBoundedVars(type_5)
     val type_6 = Eval(Type(type_5.args,type_5.i,type_5.j,type_5.const & rest_4,type_5.isGeneral))
     // 7 - return type from solver ONLY if it is general
     if (type_6.isGeneral)
@@ -166,8 +168,10 @@ object DSL {
     // 5 - solve constraints
     val subst_2 = Solver.solve(type_4)
     if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
-    if (rest_3 != BVal(true)) subst_2.get.setConcrete()
-    Eval.instantiate(subst_2.get(type_4))
+    else if (rest_3 != BVal(true))
+      Eval.instantiate(subst_2.get.mkConcrete(type_4))
+    else
+      Eval.instantiate(subst_2.get(type_4))
   }
 
   /**
@@ -194,8 +198,10 @@ object DSL {
     val moreSubst = Eval.expandSubstitution(typev.args,s.get)
     val unchanged = (typev.i == moreSubst(typev.i)) && (typev.j == moreSubst(typev.j))
 //    println(s"type unchanged ${Show(typev)} with $s")
-    if (!(typev.isGeneral && unchanged)) moreSubst.setConcrete()
-    subst ++ moreSubst
+    if (!(typev.isGeneral && unchanged))
+      subst ++ moreSubst.mkConcrete
+    else
+      subst ++ moreSubst
   }
 
   /**
@@ -260,20 +266,22 @@ object DSL {
       println(s" - simplified:    $type_4")
       // 5 - solve constraints
       val subst_2 = Solver.solve(type_4)
-      if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
-      if (rest_3 != BVal(true)) subst_2.get.setConcrete()
-      println(s" - [ solution:    $subst_2 ]")
-      // 6 - apply subst_2 if solver is an abstract solution
-      val type_5 = subst_2.get(type_4)
+      val subst_3 =
+        if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
+        else if (rest_3 == BVal(true)) subst_2.get
+        else subst_2.get.mkConcrete
+      println(s" - [ solution:    $subst_3 ]")
+      // 6 - apply subst_3 if solver is an abstract solution
+      val type_5 = subst_3(type_4)
       if (type_5.isGeneral) {
-        val rest_4 = subst_2.get.getConstBoundedVars(type_5)
+        val rest_4 = subst_3.getConstBoundedVars(type_5)
         println(s" - extended with: $rest_4")
         val type_6 = Eval(Type(type_5.args, type_5.i, type_5.j, type_5.const & rest_4, type_5.isGeneral))
         println(s" - post-solver:   $type_6")
       }
       else println(s" - solution yields a concrete instance only.")
       // 7 - apply the new substitution to the previous type and eval
-      val type_5b = Eval.instantiate(subst_2.get(type_4))
+      val type_5b = Eval.instantiate(subst_3(type_4))
       println(s" - instantiation: $type_5b")
       // 8 - show final type
       println(" : "+Show(typeOf(c)))

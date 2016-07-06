@@ -2,6 +2,7 @@ package paramConnectors.analysis
 
 import paramConnectors._
 
+import scala.collection.convert.Wrappers.{JCollectionWrapper, JIterableWrapper}
 import scala.collection.immutable.Bag
 
 /**
@@ -258,16 +259,18 @@ object Simplify {
         else todo = Some(res)
       }
     }
-    // if no variable with -1 or 1 coefficient outside "tempArgs" was found, try within args
-    if (todo.isDefined)
-      todo.get
-    // no variable with "-1" or "1" coefficient found - try to put a number (with no variables)
-    else if (optLits.lits.map contains Bag())
-    // place the coefficient with no variable on the right of "=="
-      EQ( lits2IExpr(OptLits(Lits(optLits.lits.map - Bag()),optLits.rest)) , IVal(-optLits.lits.map(Bag())) )
-    else
-    // place a "0" on the right of "=="
-      EQ( lits2IExpr(OptLits(Lits(optLits.lits.map        ),optLits.rest)) , IVal(0) )
+    todo match {
+      // if no variable with -1 or 1 coefficient outside "tempArgs" was found, try within args
+      case Some(x) => x
+      case None =>
+        // no variable with "-1" or "1" coefficient found - try to put a number (with no variables)
+        if (optLits.lits.map contains Bag())
+        // place the coefficient with no variable on the right of "=="
+          EQ( lits2IExpr(OptLits(Lits(optLits.lits.map - Bag()),optLits.rest)) , IVal(-optLits.lits.map(Bag())) )
+        else
+        // place a "0" on the right of "=="
+          EQ( lits2IExpr(OptLits(Lits(optLits.lits.map        ),optLits.rest)) , IVal(0) )
+    }
   }
 
   private def dropArgs(args: Arguments,bExpr: BExpr): BExpr = bExpr match {

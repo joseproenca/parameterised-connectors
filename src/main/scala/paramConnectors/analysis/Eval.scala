@@ -200,25 +200,25 @@ object Eval {
     */
   def instantiate(c:Connector) : Connector = {
     // 1 - build derivation tree
-    val type_1 = TypeCheck.check(c)
+    val type1 = TypeCheck.check(c)
     // 2 - unify constraints and get a substitution
-    val (subst_1,rest_1) = Unify.getUnification(type_1.const,type_1.args.vars)
+    val (subst1,rest1) = Unify.getUnification(type1.const,type1.args.vars)
     // 3 - apply substitution to the type
-    val rest_2 = subst_1(rest_1)
-    val type_2b = Type(type_1.args,subst_1(type_1.i),subst_1(type_1.j),rest_2,type_1.isGeneral)
+    val rest2 = subst1(rest1)
+    val type2b = Type(type1.args,subst1(type1.i),subst1(type1.j),rest2,type1.isGeneral)
     // 4 - extend with lost constraints over argument-variables
-    val rest_3 = subst_1.getConstBoundedVars(type_2b)
-    val type_3 = Type(type_2b.args,type_2b.i,type_2b.j,rest_2 & rest_3,type_2b.isGeneral)
+    val rest3 = subst1.getConstBoundedVars(type2b)
+    val type_3 = Type(type2b.args,type2b.i,type2b.j,rest2 & rest3,type2b.isGeneral)
     // 4.1 - evaluate and simplify type
-    val type_4 = Simplify(type_3)
+    val type4 = Simplify(type_3)
     // 5 - solve constraints
-    val subst_2 = Solver.solve(type_4)
-    if (subst_2.isEmpty) throw new TypeCheckException("Solver failed")
-    var subst = subst_2.get //subst_1 ++ subst_2.get
-    if (rest_3 != BVal(true)) subst.setConcrete()
+    val subst2 = Solver.solve(type4)
+    if (subst2.isEmpty) throw new TypeCheckException("Solver failed")
+    var subst = subst2.get //subst_1 ++ subst2.get
+    if (rest3 != BVal(true)) subst = subst.mkConcrete
 
     var res = c
-    for (a <- type_4.args.vars){
+    for (a <- type4.args.vars){
       var (expr,subst_) = subst.pop(a)
       subst = subst_
       expr match {

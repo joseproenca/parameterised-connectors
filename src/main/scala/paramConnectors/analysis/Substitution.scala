@@ -26,28 +26,20 @@ private case class BItem(v:BVar,e:BExpr) extends Item {
   *
   * @param items pairs of (variable -> expression) to be replaced
  */
-class Substitution(private val items:List[Item]) {
+class Substitution(private val items:List[Item], private val isGeneral:Boolean = true) {
 
-  private var isGeneral: Boolean = true
-  def setConcrete(): Unit = {
-    isGeneral = false
-  }
+//  protected val isGeneral: Boolean = true
+  def mkConcrete: Substitution = new Substitution(items,false)
 
   //  def +(i:Item) = new Substitution(i::items)
   def +(x:BVar,e:BExpr) = {
-    val res = new Substitution(BItem(x,e)::items)
-    if (!isGeneral) res.setConcrete()
-    res
+    new Substitution(BItem(x,e)::items,isGeneral)
   }
   def +(x:IVar,e:IExpr) = {
-    val res = new Substitution(IItem(x,e)::items)
-    if (!isGeneral) res.setConcrete()
-    res
+    new Substitution(IItem(x,e)::items,isGeneral)
   }
   def ++(that:Substitution) = {
-    val res = new Substitution(items ::: that.items)
-    if (!isGeneral || !that.isGeneral) res.setConcrete()
-    res
+    new Substitution(items ::: that.items,isGeneral && that.isGeneral)
   }
   def pop(x:Var): (Option[Expr],Substitution) = items match {
     case Nil => (None,this)
