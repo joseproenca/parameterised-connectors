@@ -49,6 +49,11 @@ object Repository {
   val sequencer = lam(n, (((dupl^n) & unzip(n)) *
     Tr(n, sym(n-1,1) & ((fifofull & dupl) * ((fifo & dupl)^(n-1))) & unzip(n) ) ) &
     ((id^n) * (zip(n) & (drain^n))))
+  /** sequencer with only inputs (alternates which input is ready) **/
+  val sequencerIn = lam(n, ((id^n) *
+    Tr(n, sym(n-1,1) & ((fifofull & dupl) * ((fifo & dupl)^(n-1))) & unzip(n) ) ) &
+    (zip(n) & (drain^n)))
+
   /** n-ary exrouter */
   // n-ary exrouter
   //   val nexrouter = lam(n, Prim("dupl",1,n+1) &

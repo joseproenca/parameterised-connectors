@@ -1,7 +1,6 @@
 package paramConnectors
 
 import java.io.File
-import java.util
 
 import paramConnectors.analysis._
 import TypeCheck.TypeCheckException
@@ -58,7 +57,7 @@ object DSL {
     *
     * @param c connector to be compiled and executed
     */
-  def run(c:Connector) = Compile(c).run()
+  def run(c:Connector) = backend.PICC(c).run()
 
   /**
     * Compile a connector to [[picc]] and try to perform a given number of steps.
@@ -67,7 +66,7 @@ object DSL {
     * @param steps number of steps to execute
     */
   def run(c:Connector,steps:Int): Unit = {
-    val con = Compile(c)
+    val con = backend.PICC(c)
     for (i <- 0 until steps)
       if (!con.doStep().isDefined) println("// no step //")
   }
@@ -79,7 +78,7 @@ object DSL {
     * @param steps number of steps to execute
     */
   def runDebug(c:Connector,steps:Int): Unit = {
-    val con = Compile(c)
+    val con = backend.PICC(c)
     for (i <- 0 until steps) con.doDebugStep()
   }
 
@@ -89,7 +88,7 @@ object DSL {
     * @param c connector
     * @return dot graph
     */
-  def draw(c:Connector) = Compile.toDot(c)
+  def draw(c:Connector) = backend.Dot(c)
 
   /**
     * Build a runnable [[picc]] connector, and use it to produce a dot-graph
@@ -97,7 +96,7 @@ object DSL {
     * @param c connector
     * @return dot graphs
     */
-  def compileAndDraw(c:Connector) = picc.graph.Dot(Compile(c))
+  def compileAndDraw(c:Connector) = picc.graph.Dot(backend.PICC(c))
 
   /**
     * Build an html graph of a connector that uses the Springy JavaScript library
@@ -106,7 +105,7 @@ object DSL {
     * @param c connector
     * @param file file name to output the html document
     */
-  def genHTML(c:Connector, file:String) = Compile.toSpringyFile(c,new File(file))
+  def genHTML(c:Connector, file:String) = backend.Springy.toFile(c,new File(file))
 
 
 
