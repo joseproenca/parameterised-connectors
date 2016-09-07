@@ -14,30 +14,45 @@ object TypeCheck {
   private class Context {
     protected val ints: Set[String]  = Set()
     protected val bools: Set[String] = Set()
-    private def build(i:Set[String],b:Set[String]) = new Context {
+    protected val conns: Map[String,(IExpr,IExpr)] = Map()
+    private def build(i:Set[String],b:Set[String],c:Map[String,(IExpr,IExpr)]) = new Context {
       override val ints = i
       override val bools = b
+      override val conns = c
     }
 
     /** checks if a variable is in the context. */
-    def contains(variable:String) = (ints contains variable) || (bools contains variable)
+    def contains(variable:String) =
+      (ints contains variable) || (bools contains variable) || (conns.map(_.x) contains variable)
     /** checks if an integer variable is in the context. */
     def apply(v:IVar) = ints contains v.x
     /** checks if a boolean variable is in the context. */
     def apply(v:BVar) = bools contains v.x
+    /** checks if a boolean variable is in the context. */
+    def apply(v:CVar) = conns contains v.x
+    def get(v:CVar): (IExpr,IExpr) = conns(v.x)
     /** Check if 2 contexts are disjoint */
     def disjoint(other:Context) =
       (ints  & other.ints)  == Set() &
-      (bools & other.bools) == Set()
+      (bools & other.bools) == Set() &
+      (conns.keySet & other.conns.keySet) == Set()
 //    def ++(other:Context): Context =
 //      if (disjoint(other)) build(ints++other.ints, bools++other.bools)
 //        else throw new TypeCheckException(s"Non-disjoint contexts:\n - $this\n and\n - $other")
-    def addInt(v:String): Context =
-      if (!ints(v)) build(ints+v,bools)
-      else throw new TypeCheckException(s"Context already contains int variable $v (vars: $ints)") // should never happen
-    def addBool(v:String): Context =
-      if (!bools(v)) build(ints,bools+v)
-      else throw new TypeCheckException(s"Context already contains bool variable $v (vars: $bools)") // should never happen
+    def addInt(v:String): Context = {
+      assert(!(ints(v)), s"Context already contains int variable $v (vars: $ints)")
+      build(ints + v, bools, conns)
+    }
+    def addBool(v:String): Context = {
+      assert(!bools(v), s"Context already contains bool variable $v (vars: $bools)")
+      build(ints, bools + v, conns)
+    }
+    def addConn(c:CVar,i:IExpr,j:IExpr): Context = {
+      check(this,i)
+      check(this,j)
+      assert(!conns.contains(c.x), s"Context already contains connector variable $c (vars: $conns)")
+      build(ints, bools, conns + (c.x->(i,j)))
+    }
 
 //    def addVar(v:IVar): Context = addInt(v.x)
 //    def addVar(v:BVar): Context = addBool(v.x)
@@ -45,15 +60,18 @@ object TypeCheck {
       case x@IVar(_) => addInt(v.x)
       case x@BVar(_) => addBool(v.x)
     }
+    def addVar(v:CVar,i:IExpr,e:IExpr): Context = addConn(v,i,e)
 
     /** Number of variables. */
-    def size = ints.size + bools.size
+    def size = ints.size + bools.size + conns.size
 
     override def toString =
       "["+bools.map(_+":Bool").mkString(",") +
         (if (bools.nonEmpty) ",") +
          ints.map(_+":Int").mkString(",") +
-      "]"
+        (if (conns.nonEmpty) ",") +
+        conns.map(_+":Conn").mkString(",") +
+    "]"
   }
 
 
@@ -162,6 +180,32 @@ object TypeCheck {
       check(gamma,phi)
       val Type(args,i,j,psi,isG) = check(gamma,c)
       Type(args,i,j,psi & phi)
+    case v@CVar(x) =>
+      if (gamma(v))
+        Type(Arguments(),Port(gamma.get(v)._1),Port(gamma.get(v)._2),BVal(true))
+      else
+        throw new TypeCheckException(s"Connector variable not found: '$x'")
+    case Let(c,n,i,j,base,ind) =>
+      val Type(ab,ib,jb,cb,gb) = check(gamma,base)
+      val Type(ai,ii,ji,ci,gi) = check(gamma.addInt(n.x).addConn(c,i,j),ind)
+      val infBaseI = Port(Simplify(Substitution(n,IVal(0))(i)))
+      val infBaseJ = Port(Simplify(Substitution(n,IVal(0))(j)))
+      val infIndI  = Port(Simplify(Substitution(n,Add(n,IVal(1)))(i)))
+      val infIndJ  = Port(Simplify(Substitution(n,Add(n,IVal(1)))(j)))
+      if (infBaseI != Simplify(ib))
+        throw new TypeCheckException(s"Let: base type has type ${Simplify(ib)}, but expected $infBaseI")
+      if (infBaseJ != Simplify(jb))
+        throw new TypeCheckException(s"Let: base type has type ${Simplify(jb)}, but expected $infBaseJ")
+//      if (infIndI != Simplify(ii))
+//        throw new TypeCheckException(s"Let: base type has type ${Simplify(ii)}, but expected $infIndI")
+//      if (infIndJ != Simplify(ji))
+//        throw new TypeCheckException(s"Let: base type has type ${Simplify(ji)}, but expected $infIndJ")
+      if (ab.vars.nonEmpty || ai.vars.nonEmpty)
+        throw new TypeCheckException(s"Let: connectors in parameters should not have arguments ($ab,$ai).")
+      // TODO: check if ib/jb match ii/ji -- probably ok now
+      // TODO: calculate type -- probably ok now
+//      val x = IVar(fresh())
+      Type(Arguments(List(n)),Port(i),Port(j),cb & ci, gb && gi)
   }
 
 

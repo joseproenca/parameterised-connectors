@@ -33,6 +33,7 @@ object DSL {
   val one = 1:Itf
   val swap = Symmetry(1,1)
   val id = Id(1)
+  val nil = Id(0)
   val fifo = Prim("fifo",1,1)
   val fifofull = Prim("fifofull",1,1)
   val lossy = Prim("lossy",1,1)

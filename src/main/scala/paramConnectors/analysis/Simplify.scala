@@ -407,6 +407,10 @@ object Simplify {
       case (c2,BVal(true)) => c2
       case (c2,phi2) => Restr(c,phi2)
     }
+    case Let(cx,x,i,j,base,ind) => (apply(i),apply(j),apply(base),apply(ind)) match {
+      case (i2,j2,base2,ind2) => Let(cx,x,i2,j2,base2,ind2)
+    }
+    case CVar(_) => con
   }
 
 
