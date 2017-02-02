@@ -139,9 +139,10 @@ object TypeCheck {
       val phi2 = AndN(newx.asInstanceOf[IVar],IVal(0),a,phi)
       val ci = Sum(newx.asInstanceOf[IVar],IVal(0),a,interfaceSem(Eval(i))) // 0<=x<a
       val cj = Sum(newx.asInstanceOf[IVar],IVal(0),a,interfaceSem(Eval(j)))
-      val newi = IVar(fresh()) // gen unique name
-      val newj = IVar(fresh()) // gen unique name
-      Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & /*nonNeg(newi,newj)*/ nonNeg(a) & phi2,isG)
+      // val newi = IVar(fresh()) // gen unique name
+      // val newj = IVar(fresh()) // gen unique name
+      // Type(args, Port(newi), Port(newj), EQ(newi,ci) & EQ(newj,cj) & /*nonNeg(newi,newj)*/ nonNeg(a) & phi2,isG)
+      Type(args, Port(ci), Port(cj), /*nonNeg(newi,newj)*/ nonNeg(a) & phi2,isG)
     // END OF TRICKY CASE
     case Choice(b, c1, c2) =>
       val Type(args1,i1,j1,phi1,isG1) = check(gamma,c1)
@@ -247,6 +248,7 @@ object TypeCheck {
     sub.alphaEquiv(t2)
   }
 
+  // Checks if `gamma,x |- c`, returns its type and a rename for `x` if `x` already exists in `gamma`.
   private def checkAndAddVar(gamma:Context,x:Var,c:Connector): (Type,Var) = {
     if (gamma contains x.x) {
       val y = fresh(x)

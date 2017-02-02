@@ -32,6 +32,7 @@ object Repository {
   /** sequence of n fifos. */
   val seqfifo = lam(n,Tr(n - 1, sym(n - 1,1) & (fifo^n)))
   val seqfifo2 = lam(n,seq(1,fifo,n))
+  val seqfifo3 = lam(n,Tr(n - 1, (fifo^n) & sym(n - 1,1)))
 
   /** rearrange 2*n entries: from n+n to 2+2+...+2 (n times) */
   val zip = lam(n,
