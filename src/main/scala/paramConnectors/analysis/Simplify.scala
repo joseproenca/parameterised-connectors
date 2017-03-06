@@ -169,9 +169,16 @@ object Simplify {
       case (e3,Div(e4,IVal(n))) if n > 0 => optimiseIneq(Mul(IVal(n),e3),e4,const)
       case (Div(e3,IVal(n)),e4) if n < 0 => optimiseIneq(neg(e3),Mul(IVal(-n),e4),const)
       case (e3,Div(e4,IVal(n))) if n < 0 => optimiseIneq(Mul(IVal(-n),e3),neg(e4),const)
-        //
+        // drop coefficient in ax OP 0
       case (IVal(0),e3@Mul(_,_)) => const(IVal(0),reduceZ(e3))
       case (e3@Mul(_,_),IVal(0)) => const(reduceZ(e3),IVal(0))
+        // move constant in a+x OP b
+      case (IVal(n1),Add(x@IVar(_),IVal(n2))) => const(IVal(n2-n1),x)
+//      case (Add(IVal(n1),x@IVar(_)),IVal(n2)) => const(x,IVal(n2-n1))
+      case (Add(x@IVar(_),IVal(n1)),IVal(n2)) => const(x,IVal(n2-n1))
+      case (IVal(n1),Sub(x@IVar(_),IVal(n2))) => const(IVal(n1+n2),x)
+      case (Sub(x@IVar(_),IVal(n1)),IVal(n2)) => const(x,IVal(n1+n2))
+        // otherwise
       case (e3,e4) => const(e3,e4)
     }
   }

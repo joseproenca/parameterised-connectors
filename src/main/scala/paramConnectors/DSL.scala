@@ -326,4 +326,5 @@ object DSL {
     * @return rediced connector
     */
   def reduce(c:Connector):Connector = Eval.reduce(c)
+
 }
