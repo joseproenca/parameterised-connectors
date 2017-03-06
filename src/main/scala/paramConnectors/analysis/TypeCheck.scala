@@ -28,9 +28,6 @@ object TypeCheck {
     def apply(v:IVar) = ints contains v.x
     /** checks if a boolean variable is in the context. */
     def apply(v:BVar) = bools contains v.x
-    /** checks if a boolean variable is in the context. */
-    def apply(v:CVar) = conns contains v.x
-    def get(v:CVar): (IExpr,IExpr) = conns(v.x)
     /** Check if 2 contexts are disjoint */
     def disjoint(other:Context) =
       (ints  & other.ints)  == Set() &
@@ -47,12 +44,6 @@ object TypeCheck {
       assert(!bools(v), s"Context already contains bool variable $v (vars: $bools)")
       build(ints, bools + v, conns)
     }
-    def addConn(c:CVar,i:IExpr,j:IExpr): Context = {
-      check(this,i)
-      check(this,j)
-      assert(!conns.contains(c.x), s"Context already contains connector variable $c (vars: $conns)")
-      build(ints, bools, conns + (c.x->(i,j)))
-    }
 
 //    def addVar(v:IVar): Context = addInt(v.x)
 //    def addVar(v:BVar): Context = addBool(v.x)
@@ -60,7 +51,6 @@ object TypeCheck {
       case x@IVar(_) => addInt(v.x)
       case x@BVar(_) => addBool(v.x)
     }
-    def addVar(v:CVar,i:IExpr,e:IExpr): Context = addConn(v,i,e)
 
     /** Number of variables. */
     def size = ints.size + bools.size + conns.size
@@ -181,32 +171,6 @@ object TypeCheck {
       check(gamma,phi)
       val Type(args,i,j,psi,isG) = check(gamma,c)
       Type(args,i,j,psi & phi)
-    case v@CVar(x) =>
-      if (gamma(v))
-        Type(Arguments(),Port(gamma.get(v)._1),Port(gamma.get(v)._2),BVal(true))
-      else
-        throw new TypeCheckException(s"Connector variable not found: '$x'")
-    case Let(c,n,i,j,base,ind) =>
-      val Type(ab,ib,jb,cb,gb) = check(gamma,base)
-      val Type(ai,ii,ji,ci,gi) = check(gamma.addInt(n.x).addConn(c,i,j),ind)
-      val infBaseI = Port(Simplify(Substitution(n,IVal(0))(i)))
-      val infBaseJ = Port(Simplify(Substitution(n,IVal(0))(j)))
-      val infIndI  = Port(Simplify(Substitution(n,Add(n,IVal(1)))(i)))
-      val infIndJ  = Port(Simplify(Substitution(n,Add(n,IVal(1)))(j)))
-      if (infBaseI != Simplify(ib))
-        throw new TypeCheckException(s"Let: base type has type ${Simplify(ib)}, but expected $infBaseI")
-      if (infBaseJ != Simplify(jb))
-        throw new TypeCheckException(s"Let: base type has type ${Simplify(jb)}, but expected $infBaseJ")
-//      if (infIndI != Simplify(ii))
-//        throw new TypeCheckException(s"Let: base type has type ${Simplify(ii)}, but expected $infIndI")
-//      if (infIndJ != Simplify(ji))
-//        throw new TypeCheckException(s"Let: base type has type ${Simplify(ji)}, but expected $infIndJ")
-      if (ab.vars.nonEmpty || ai.vars.nonEmpty)
-        throw new TypeCheckException(s"Let: connectors in parameters should not have arguments ($ab,$ai).")
-      // TODO: check if ib/jb match ii/ji -- probably ok now
-      // TODO: calculate type -- probably ok now
-//      val x = IVar(fresh())
-      Type(Arguments(List(n)),Port(i),Port(j),cb & ci, gb && gi)
   }
 
 

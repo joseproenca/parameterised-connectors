@@ -43,9 +43,4 @@ case class BAbs(x:BVar, c:Connector) extends Connector
 case class IApp(c:Connector, a:IExpr) extends Connector
 case class BApp(c:Connector, b:BExpr) extends Connector
 
-case class CVar(x:String) extends Connector {
-  override def toString = x
-}
-case class Let(cx:CVar,x:IVar,i:IExpr,j:IExpr,base:Connector,ind:Connector) extends Connector
-
 case class Restr(c:Connector,phi:BExpr) extends Connector

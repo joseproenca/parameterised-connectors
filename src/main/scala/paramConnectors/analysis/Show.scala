@@ -21,8 +21,6 @@ object Show {
     case IApp(c, a)     => s"${showP(c)}(${apply(a)})"
     case BApp(c, b)     => s"${showP(c)}(${apply(b)})"
     case Restr(c,b)     => s"${showP(c)} | ${showP(b)}"
-    case Let(cx,x,i,j,bs,in) => s"Let($cx,$x,${apply(i)},${apply(j)},${apply(bs)},${apply(in)})"
-    case CVar(x) => x
   }
   private def showP(con:Connector): String = con match {
     case Seq(_,_) | Par(_,_) | Choice(_,_,_) | IAbs(_,_) | BAbs(_,_) |
