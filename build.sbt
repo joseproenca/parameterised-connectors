@@ -11,6 +11,10 @@ scalacOptions ++= Seq("-unchecked", "-deprecation","-feature")
 // more complete check for complete "cases" (scala 2.10)
 // initialize ~= { _ => sys.props("scalac.patmat.analysisBudget") = "512" }
 
+// add git dependency on PICC
+lazy val piccProject = RootProject(uri("git://github.com/joseproenca/picc.git"))
+lazy val root = (project in file(".")).dependsOn(piccProject)
+
 libraryDependencies ++= Seq(
   "junit" % "junit" % "4.12",
   "org.choco-solver" % "choco-solver" % "3.3.1-j7",
