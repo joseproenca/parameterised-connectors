@@ -108,7 +108,12 @@ object DSL {
     */
   def genHTML(c:Connector, file:String) = backend.Springy.toFile(c,new File(file))
 
-
+  /**
+    * Parses a string into a connector.
+    * @param s string representing a connector
+    * @return Parse result (parsed(connector) or failure(error))
+    */
+  def parse(s:String): Parser.ParseResult[Connector] = Parser.parse(s)
 
   // overall methods to typecheck
   /**
