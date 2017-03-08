@@ -26,7 +26,7 @@ class TestReduce {
     ((id^n) * (zip(n) & (Prim("drain",2,0)^n))))
 
 
-  @Test def TestReductions() {
+  @Test def testReductions() {
     testOK(fifo ^ 3, "fifo ⊗ (fifo ⊗ fifo)")
     testOK(seqfifo,"fifo")
     //    testOK(zip,"Id(2)")
@@ -38,7 +38,7 @@ class TestReduce {
     // (dupl ⊗ Tr_1{fifo ; dupl}) ; (id ⊗ drain)
   }
 
-  @Test def TestInstantiate(): Unit = {
+  @Test def testInstantiate(): Unit = {
     testInstOK(lam(x,id^x) & lam(y,id^y),"((\\x.(id^x)) ; (\\y.(id^y)))(0)(0)")
     testInstOK(lam(n,lam(x,id^x) & lam(y,id^y)),"(\\n.((\\x.(id^x)) ; (\\y.(id^y))))(1)(0)(0)")
 

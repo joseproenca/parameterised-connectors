@@ -4,6 +4,8 @@ import org.junit.Assert._
 import org.junit.Test
 import paramConnectors.DSL._
 
+import scala.util.Success
+
 
 
 /**
@@ -11,18 +13,21 @@ import paramConnectors.DSL._
   */
 class TestParser {
 
-  @Test def TestParser(): Unit = {
+  @Test def parseExamples(): Unit = {
     testOK("fifo",fifo)
     testOK("fifo & drain",fifo & drain) // does not need to typecheck
-    testOK("\\x:I -> fifo^2",lam(x,fifo^2))
-    testOK("\\x:I -> fifo^x",lam(x,fifo^x))
+    testOK("\\x:I . fifo^2",lam(x,fifo^2))
+    testOK("\\x y z:B . fifo^x",lam(x, lam(y, lam("z":B,fifo^x))))
     testOK("(id * abc) & drain ",(id * "abc") & drain)
   }
 
   private def testOK(in:String,out:Connector) = {
-    val res = Parser.parse(in)
-    assert(res.successful,"Parse error: "+res)
-    assertEquals(s"Wrong parsed value. Got\n  ${res.get}\nexpected\n  $out",res.get,out)
+    Parser.parse(in) match {
+      case Parser.Success(result, _) =>
+        assertEquals(s"Wrong parsed value. Got\n  $result\nexpected\n  $out",result,out)
+      case err: Parser.NoSuccess =>
+        fail("Parse error: "+err)
+    }
   }
 
 }

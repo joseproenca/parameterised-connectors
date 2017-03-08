@@ -1,6 +1,9 @@
 package paramConnectors
 
-sealed trait Var {def x:String}
+sealed trait Var {
+  def x:String
+  def unary_! = LamWrap(List(this)) // helper to DSL (lambdas: !x -> conn)
+}
 
 sealed abstract class Expr
 

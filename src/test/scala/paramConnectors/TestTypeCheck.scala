@@ -18,7 +18,7 @@ class TestTypeCheck {
   val n: I = "n"
 
 
-  @Test def TestTypeCheck() {
+  @Test def typeCheckExamples() {
     testOK( fifo^3,
       "1^3 -> 1^3 | (3 >= 0) & (1 >= 0) & (1 >= 0)", // type after derivation tree
       "3 -> 3",     // type after unification

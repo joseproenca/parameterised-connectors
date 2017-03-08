@@ -28,8 +28,8 @@ object Show {
     case _ => apply(con)
   }
   private def showAP(con:Connector): String = con match {
-    case IAbs(x,c) => s",${apply(x)}${showAP(c)}"
-    case BAbs(x,c) => s",${apply(x)}${showAP(c)}"
+    case IAbs(x,c) => s" ${apply(x)}${showAP(c)}"
+    case BAbs(x,c) => s" ${apply(x)}${showAP(c)}"
     case _ => s".${showP(con)}"
   }
 

@@ -28,7 +28,7 @@ class TestSolver {
   val a = BVar("a")
   val b = BVar("b")
 
-  @Test def TestTypeCheck() {
+  @Test def solveExamples() {
     // 1 + 2 = 3
     testConstr( EQ(Add(1,2),3) , shouldHold = true)
     // x=2

@@ -18,7 +18,7 @@ class TestShow {
   val c3 = id^3
   val c4 = Trace(2,"fifo" & id)
 
-  @Test def TestPrints() {
+  @Test def printExamples() {
     testPrint("fifo",
               "fifo")
     testPrint("fifo" * id,
@@ -31,9 +31,11 @@ class TestShow {
               "\\x.(fifo^x)")
     testPrint(Trace(2,("fifo"^3) & (id * (id^3))),
               "Tr_2{(fifo^3) ; (id ⊗ (id^3))}")
+    testPrint(lam(x,lam("b":B,drain^x)),
+      "\\x b.(drain^x)")
   }
 
-  @Test def testPicc: Unit = {
+  @Test def piccifyExample: Unit = {
     picc.DSL.fifo("a","b",Some(3)).run()
     assert(true)
   }

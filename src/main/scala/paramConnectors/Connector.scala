@@ -27,6 +27,14 @@ sealed abstract class Connector {
 }
 // helper for DSL
 case class ExpWrap(x:IVar,to:IExpr)
+case class LamWrap(vs:List[Var]) { // !x - y -> conn
+  def ->(c:Connector): Connector = vs match {
+    case Nil => c
+    case (h::t) => DSL.lam(h,LamWrap(t)->c)
+  }
+  def -(v2:Var): LamWrap =  LamWrap(vs:::List(v2))
+  def -(v2c:(Var,Connector)): Connector = LamWrap(vs:::List(v2c._1)) -> v2c._2
+}
 
 case class Seq(c1:Connector, c2:Connector) extends Connector
 case class Par(c1:Connector, c2:Connector) extends Connector
