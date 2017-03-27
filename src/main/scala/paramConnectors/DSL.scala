@@ -121,6 +121,11 @@ object DSL {
     */
   def parse(s:String): Parser.ParseResult[Connector] = Parser.parse(s)
 
+  def parse2(s:String): Connector =  Parser.parse(s) match {
+    case Parser.Success(result, next) => result
+    case f: Parser.NoSuccess => throw new TypeCheckException("Parser failed: "+f)
+  }
+
   // overall methods to typecheck
   /**
    * Type check a connector (build tree, unify, and solve constraints)

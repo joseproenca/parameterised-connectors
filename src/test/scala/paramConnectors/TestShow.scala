@@ -4,7 +4,6 @@ import org.junit.Test
 import org.junit.Assert._
 import DSL._
 import paramConnectors.analysis.Show
-import picc.DSL._
 
 class TestShow {
 
@@ -35,7 +34,13 @@ class TestShow {
       "\\x b.(drain^x)")
   }
 
-  @Test def piccifyExample: Unit = {
+  @Test def checkLambdaDSL(): Unit = {
+    testPrint(!("x":I) -> (fifo^x)    , "\\x.(fifo^x)")
+    testPrint(!x - ("y":I) -> (fifo^x), "\\x y.(fifo^x)")
+    testPrint(!x-y-z-("b":B)->(fifo^x), "\\x y z b.(fifo^x)")
+  }
+
+    @Test def piccifyExample: Unit = {
     picc.DSL.fifo("a","b",Some(3)).run()
     assert(true)
   }
