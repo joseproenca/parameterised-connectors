@@ -1,8 +1,12 @@
+lazy val js = (project in file("js")).enablePlugins(ScalaJSPlugin)
+scalaVersion in js := "2.12.1" // Or the right version
+addCommandAlias("runWithJS", ";fastOptJS;run")
+
 name := "parameterised-connectors"
 
 version := "1.0"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.1"
   //"2.10.5" //"2.11.7" -> strangely requires old version of picc (github)
 
 // more warnings
@@ -13,16 +17,22 @@ scalacOptions ++= Seq("-unchecked", "-deprecation","-feature")
 
 // add git dependency on PICC
 lazy val piccProject = RootProject(uri("git://github.com/joseproenca/picc.git"))
-lazy val root = (project in file(".")).dependsOn(piccProject)
+lazy val root = (project in file(".")).aggregate(js)
+
 
 libraryDependencies ++= Seq(
   "junit" % "junit" % "4.12",
   "org.choco-solver" % "choco-solver" % "3.3.1-j7",
   "org.slf4j" % "slf4j-simple" % "1.7.12",
   "io.github.nicolasstucki" %% "multisets" % "0.3",
-  "org.scala-lang" % "scala-compiler" % scalaVersion.value
+  "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+  "org.scala-js" %%% "scalajs-dom" % "0.9.1",
+  "com.lihaoyi" %%% "utest" % "0.4.5" % "test"
+
+
 //   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 )
+
 
 // libraryDependencies += ProjectRef(uri("https://github.com/joseproenca/picc"),"picc")
 

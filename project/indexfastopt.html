@@ -1,10 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>Reo Scala.js application</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 </head>
 <body>
-$END$
+
+<h1>Reo Scala.js application - fast-optimized version</h1>
+
+
+<div id="divid">
+</div>
+
+<script type="text/javascript" src="./js/target/scala-2.12/js-fastopt.js"></script>
+<script type="text/javascript" src="./js/target/scala-2.12/js-jsdeps.js"></script>
+
+<script>
+    reojs.Webtool().main(document.getElementById('divid'));
+</script>
 </body>
 </html>

@@ -1,10 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>Example Scala.js application</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 </head>
-<body>
-$END$
+<body style="margin: 0px">
+
+<div>
+    <canvas style="display: block" id="canvas" width="255" height="255"/>
+</div>
+
+<script type="text/javascript" src="../example-opt.js"></script>
+<script>
+    example.ScalaJSExample().main(document.getElementById('canvas'));
+</script>
 </body>
-</html>
+</html>l>
