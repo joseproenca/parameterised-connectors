@@ -4,7 +4,6 @@ import org.junit.Test
 import org.junit.Assert._
 import DSL._
 import paramConnectors.analysis.Show
-import picc.DSL._
 
 class TestShow {
 
@@ -35,8 +34,5 @@ class TestShow {
       "\\x b.(drain^x)")
   }
 
-  @Test def piccifyExample: Unit = {
-    picc.DSL.fifo("a","b",Some(3)).run()
-    assert(true)
-  }
+
 }

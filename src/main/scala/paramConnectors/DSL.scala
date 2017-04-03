@@ -58,37 +58,6 @@ object DSL {
     */
   def simplify(c:Connector) = analysis.Simplify(c)
 
-  // methods to execute a connector //
-  /**
-    * Compile a connector to [[picc]] and execute it until no behaviour is found.
-    *
-    * @param c connector to be compiled and executed
-    */
-  def run(c:Connector) = backend.PICC(c).run()
-
-  /**
-    * Compile a connector to [[picc]] and try to perform a given number of steps.
-    *
-    * @param c connector to be compiled and executed
-    * @param steps number of steps to execute
-    */
-  def run(c:Connector,steps:Int): Unit = {
-    val con = backend.PICC(c)
-    for (i <- 0 until steps)
-      if (!con.doStep().isDefined) println("// no step //")
-  }
-
-  /**
-    * Same as [[run(c,steps)]] except that it prints debug data between steps
-    *
-    * @param c connector to be compiled and executed
-    * @param steps number of steps to execute
-    */
-  def runDebug(c:Connector,steps:Int): Unit = {
-    val con = backend.PICC(c)
-    for (i <- 0 until steps) con.doDebugStep()
-  }
-
   /**
     * Build a dot-graph of a connector
     *
@@ -96,15 +65,7 @@ object DSL {
     * @return dot graph
     */
   def draw(c:Connector) = backend.Dot(c)
-
-  /**
-    * Build a runnable [[picc]] connector, and use it to produce a dot-graph
-    *
-    * @param c connector
-    * @return dot graphs
-    */
-  def compileAndDraw(c:Connector) = picc.graph.Dot(backend.PICC(c))
-
+  
   /**
     * Build an html graph of a connector that uses the Springy JavaScript library
     * (http://getspringy.com)
