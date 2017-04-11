@@ -3,6 +3,8 @@ package reojs
 
 import org.scalajs.dom
 import dom.html
+import paramConnectors.DSL
+
 import scalajs.js.annotation.JSExport
 import scalatags.JsDom.all._
 
@@ -18,7 +20,7 @@ object Webtooljs extends{
   @JSExport
   def main(target: html.Div) ={
     //definição da lista de operadores e caixa de entrada e duas caixas de saída
-    val operators = Seq("fifo", "drain", "writer", "reader", "duplicator", "Y")
+    val operators = Seq("fifo", "drain", "writer", "reader", "duplicator", "Y", "teste")
     val box = input(
       `type`:="text",
       placeholder:="Type Here!"
@@ -35,6 +37,7 @@ object Webtooljs extends{
 
     //definição dos valores atribuidos a cada um dos operadores utilizados
     //2 vezes para duas possiveis bibliotecas
+   // val fifoC = DSL.fifo.toString()
     val (fifoA, drainA, writerA, readerA, duplicatorA, yA) = ("-A->","v\nI\nA\nI\n^",
       "writerA","readerA","-A-<",">-A-")
     val (fifoB, drainB, writerB, readerB, duplicatorB, yB) = ("-B->","v\nI\nB\nI\n^",
@@ -56,7 +59,9 @@ object Webtooljs extends{
            case "fifo" => output...
            case
          }*/
-        if (box.value=="fifo"){val fif = new Fifo(1); output.textContent =(fif.toString); output2.textContent = (fifoB)}
+
+        //if (box.value=="fifo"){output.textContent= (fifoC); output2.textContent = (fifoC)}
+        if (box.value=="fifo"){output.textContent= (fifoA); output2.textContent = (fifoB)}
         if (box.value=="drain"){output.textContent =(drainA); output2.textContent = (drainB)}
         if (box.value=="writer"){output.textContent =(writerA); output2.textContent = (writerB)}
         if (box.value=="reader"){output.textContent =(readerA); output2.textContent = (readerB)}
