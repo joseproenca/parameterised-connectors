@@ -9,17 +9,12 @@ import scalajs.js.annotation.JSExport
 import scalatags.JsDom.all._
 
 
-//Notas Gerais:
-//Muita coisa a ser melhorada mas serve como base,
-//Próximos passos fazer janelas maiores/usar imagens/importar conteudo/integrar com
-//bibliotecas ja existentes/utilizar um parser
-
 
 @JSExport
 object Webtooljs extends{
   @JSExport
   def main(target: html.Div) ={
-    //definição da lista de operadores e caixa de entrada e duas caixas de saída
+
     val operators = Seq("fifo", "drain", "writer", "reader", "duplicator", "Y", "teste")
     val box = input(
       `type`:="text",
@@ -34,23 +29,13 @@ object Webtooljs extends{
       overflowY:="scroll"
     ).render
 
-
-    //definição dos valores atribuidos a cada um dos operadores utilizados
-    //2 vezes para duas possiveis bibliotecas
-   // val fifoC = DSL.fifo.toString()
+    //this is commented for now due to errors
+   // val fifoC = DSL.fifo.toString
     val (fifoA, drainA, writerA, readerA, duplicatorA, yA) = ("-A->","v\nI\nA\nI\n^",
       "writerA","readerA","-A-<",">-A-")
     val (fifoB, drainB, writerB, readerB, duplicatorB, yB) = ("-B->","v\nI\nB\nI\n^",
       "writerB","readerB","-B-<",">-B-")
-    //Aqui preciso de ajuda em Scala para ir buscar os elementos conforme os que saem
-    //por ordem, para fazer isto de uma forma mais inteligente com switch/match
-    //em vez dos ifs
-    //aqui quero implementar um switch por exemplo..
-    //scalatags facilitam toodo o processo depois uma vez atribuidas...
-    //no futuro fazer isto com imagens/figuras
 
-    //tentei ter as condições para o 2o output sepradas mas o evento anulava as do primeiro
-    //deste modo saem as duas
     box.onkeyup = (e: dom.Event) => {
       if (operators.contains(box.value)){
 
@@ -59,7 +44,10 @@ object Webtooljs extends{
            case "fifo" => output...
            case
          }*/
+        //this code needs to be optimized and ifs need to be removed later
 
+
+        //this is commented due to errors with DSL.fifo.toString import
         //if (box.value=="fifo"){output.textContent= (fifoC); output2.textContent = (fifoC)}
         if (box.value=="fifo"){output.textContent= (fifoA); output2.textContent = (fifoB)}
         if (box.value=="drain"){output.textContent =(drainA); output2.textContent = (drainB)}
@@ -87,7 +75,7 @@ object Webtooljs extends{
 
     target.appendChild(
       div(
-        h1("Web ReoConnectors by JP&JP"),
+        h1("Web ReoConnectors"),
         p(
           "Write the structure you want to see: "
         ),
@@ -98,17 +86,14 @@ object Webtooljs extends{
     )
 
 
-    //second "canvas" a ser corrido em paralelo
+    //second "canvas" test
     target.appendChild(
       div(
-        h1("Segundo Canvas em Paralelo"),
+        h1("Second Canvas"),
         p(
-          "Aqui sairia a segunda estruruta: "
+          "Structure: "
         ),
-        div(output2),
-        p(
-          "Sei que não é muito mas para já\n mas acho que é um bom começo"
-        )
+        div(output2)
       ).render
     )
 
