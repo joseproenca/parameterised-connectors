@@ -3,7 +3,7 @@ package reojs
 
 import org.scalajs.dom
 import dom.html
-import paramConnectors.DSL
+import paramConnectors.{DSL, Parser}
 
 import scalajs.js.annotation.JSExport
 import scalatags.JsDom.all._
@@ -22,7 +22,6 @@ object Webtooljs extends{
     ).render
     var testString = ""
     val output = span.render
-    val output2 = span.render
 
     lazy val output3 = div(
       height:="400px",
@@ -30,37 +29,37 @@ object Webtooljs extends{
     ).render
 
     //this is commented for now due to errors
-   // val fifoC = DSL.fifo.toString
+   val fifoC = DSL.fifo
+/*
     val (fifoA, drainA, writerA, readerA, duplicatorA, yA) = ("-A->","v\nI\nA\nI\n^",
       "writerA","readerA","-A-<",">-A-")
     val (fifoB, drainB, writerB, readerB, duplicatorB, yB) = ("-B->","v\nI\nB\nI\n^",
       "writerB","readerB","-B-<",">-B-")
+*/
+    var outTest = ""
+
+
 
     box.onkeyup = (e: dom.Event) => {
-      if (operators.contains(box.value)){
 
-        testString = box.value
-        /* box.value match {
-           case "fifo" => output...
-           case
-         }*/
-        //this code needs to be optimized and ifs need to be removed later
-
-
-        //this is commented due to errors with DSL.fifo.toString import
-        //if (box.value=="fifo"){output.textContent= (fifoC); output2.textContent = (fifoC)}
-        if (box.value=="fifo"){output.textContent= (fifoA); output2.textContent = (fifoB)}
-        if (box.value=="drain"){output.textContent =(drainA); output2.textContent = (drainB)}
-        if (box.value=="writer"){output.textContent =(writerA); output2.textContent = (writerB)}
-        if (box.value=="reader"){output.textContent =(readerA); output2.textContent = (readerB)}
-        if (box.value=="duplicator"){output.textContent =(duplicatorA); output2.textContent = (duplicatorB)}
-        if (box.value=="Y"){output.textContent =(yA); output2.textContent = (yB)}
+      def myText =  (DSL.parse(box.value) match {
+        case Parser.Success(result, next) => paramConnectors.backend.Springy(result)
+        case f: Parser.NoSuccess => "Parser failed: " + f
+      }).render
+      //outTest = output.textContent
+      output.innerHTML = ""
+      output.appendChild(myText)
 
 
-      }
 
-      else output.textContent = "NotValid Input"
+
+
+
+
+     // else output.textContent = "NotValid Input"
     }
+
+
     def renderOps = ul(
       for {
         ops <- operators
@@ -71,6 +70,7 @@ object Webtooljs extends{
     ).render
 
     val outOperators = div(renderOps).render
+
 
 
     target.appendChild(
@@ -84,18 +84,5 @@ object Webtooljs extends{
         div(output)
       ).render
     )
-
-
-    //second "canvas" test
-    target.appendChild(
-      div(
-        h1("Second Canvas"),
-        p(
-          "Structure: "
-        ),
-        div(output2)
-      ).render
-    )
-
   }
 }
