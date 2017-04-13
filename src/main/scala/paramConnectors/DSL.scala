@@ -58,6 +58,37 @@ object DSL {
     */
   def simplify(c:Connector) = analysis.Simplify(c)
 
+  // methods to execute a connector //
+  /**
+    * Compile a connector to [[picc]] and execute it until no behaviour is found.
+    *
+    * @param c connector to be compiled and executed
+    */
+  def run(c:Connector) = backend.PICC(c).run()
+
+  /**
+    * Compile a connector to [[picc]] and try to perform a given number of steps.
+    *
+    * @param c connector to be compiled and executed
+    * @param steps number of steps to execute
+    */
+  def run(c:Connector,steps:Int): Unit = {
+    val con = backend.PICC(c)
+    for (i <- 0 until steps)
+      if (!con.doStep().isDefined) println("// no step //")
+  }
+
+  /**
+    * Same as [[run(c,steps)]] except that it prints debug data between steps
+    *
+    * @param c connector to be compiled and executed
+    * @param steps number of steps to execute
+    */
+  def runDebug(c:Connector,steps:Int): Unit = {
+    val con = backend.PICC(c)
+    for (i <- 0 until steps) con.doDebugStep()
+  }
+
   /**
     * Build a dot-graph of a connector
     *
@@ -65,7 +96,15 @@ object DSL {
     * @return dot graph
     */
   def draw(c:Connector) = backend.Dot(c)
-  
+
+  /**
+    * Build a runnable [[picc]] connector, and use it to produce a dot-graph
+    *
+    * @param c connector
+    * @return dot graphs
+    */
+  def compileAndDraw(c:Connector) = picc.graph.Dot(backend.PICC(c))
+
   /**
     * Build an html graph of a connector that uses the Springy JavaScript library
     * (http://getspringy.com)
@@ -81,6 +120,11 @@ object DSL {
     * @return Parse result (parsed(connector) or failure(error))
     */
   def parse(s:String): Parser.ParseResult[Connector] = Parser.parse(s)
+
+  def parse2(s:String): Connector =  Parser.parse(s) match {
+    case Parser.Success(result, next) => result
+    case f: Parser.NoSuccess => throw new TypeCheckException("Parser failed: "+f)
+  }
 
   // overall methods to typecheck
   /**
@@ -105,7 +149,7 @@ object DSL {
     // 5 - solve constraints
     val subst2 = Solver.solve(type4)
     val subst3 = subst2 match {
-      case None => throw new TypeCheckException("Solver failed")
+      case None => throw new TypeCheckException("No solution found: " + Show(type4.const))
       case Some(s2) => if (rest3 == BVal(true)) s2
                        else s2.mkConcrete
     }
@@ -117,6 +161,28 @@ object DSL {
     if (type6.isGeneral)
       type6
     else type4
+  }
+
+  /**
+    * Type check a connector WITHOUT the constraint solving - only using unification and simplifications.
+    * @param c connector to be type-checked
+    * @return the inferred type after simplifications and unification
+    */
+  def lightTypeOf(c:Connector): Type = {
+    // 1 - build derivation tree
+    val type1 = TypeCheck.check(c)
+    // 2 - unify constraints and get a substitution
+    val (subst1,rest1) = Unify.getUnification(type1.const,type1.args.vars)
+    // 3 - apply substitution to the type
+    val rest2 = subst1(rest1)
+    val type2b = Type(type1.args,subst1(type1.i),subst1(type1.j),rest2,type1.isGeneral)
+    // 4 - extend with lost constraints over argument-variables
+    val rest3 = subst1.getConstBoundedVars(type2b)
+    val type3 = Type(type2b.args,type2b.i,type2b.j,rest2 & rest3,type2b.isGeneral)
+    // 4.1 - evaluate and simplify type
+    val type4 = Simplify(type3)
+    // return the final type, without solving the missing constraints
+    type4
   }
 
   /**

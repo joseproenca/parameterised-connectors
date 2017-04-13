@@ -3,7 +3,8 @@ package paramConnectors.analysis
 import paramConnectors._
 
 import scala.collection.convert.Wrappers.{JCollectionWrapper, JIterableWrapper}
-import scala.collection.immutable.Bag
+//import scala.collection.immutable.Bag
+import paramConnectors.analysis.{Multiset => Bag}
 
 /**
  * Created by jose on 30/06/15.
@@ -15,7 +16,7 @@ object Simplify {
   case class OptLits(lits:Lits,rest:Set[IExpr])
 
   // needed for bags to work
-  implicit private val bagStringConf = Bag.configuration.compact[String]
+//  implicit private val bagStringConf = Bag.configuration.compact[String]
 
   def iexpr2lits(e:IExpr): OptLits = e match {
       // EXPERIMENTS with DIV
