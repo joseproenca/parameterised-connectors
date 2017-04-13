@@ -3,6 +3,8 @@ package reojs
 
 import org.scalajs.dom
 import dom.html
+import paramConnectors.analysis.{Eval, Simplify}
+import paramConnectors.analysis.TypeCheck.TypeCheckException
 import paramConnectors.{DSL, Parser}
 
 import scalajs.js.annotation.JSExport
@@ -13,9 +15,9 @@ import scalatags.JsDom.all._
 @JSExport
 object Webtooljs extends{
   @JSExport
-  def main(target: html.Div) ={
+  def main(target: html.Div, canvas: html.Canvas) ={
 
-    val operators = Seq("fifo", "drain", "writer", "reader", "duplicator", "Y", "teste")
+    val operators = Seq("fifo", "drain", "writer", "reader", "dupl", "merger", "Y", "teste", "(fifo*writer) & drain")
     val box = input(
       `type`:="text",
       placeholder:="Type Here!"
@@ -41,22 +43,32 @@ object Webtooljs extends{
 
 
     box.onkeyup = (e: dom.Event) => {
+      var ok = true
+      var typ = ""
 
-      def myText =  (DSL.parse(box.value) match {
-        case Parser.Success(result, next) => paramConnectors.backend.Springy(result)
-        case f: Parser.NoSuccess => "Parser failed: " + f
-      }).render
+      val myText = DSL.parse(box.value) match {
+        case Parser.Success(result, next) =>
+          try {
+            typ = paramConnectors.analysis.Show(paramConnectors.DSL.lightTypeOf(result))
+            paramConnectors.backend.Springy.script(result)
+          }
+          catch {
+            case e: TypeCheckException =>
+              ok = false
+              "Type error: " + e.getMessage
+          }
+        case f: Parser.NoSuccess =>
+          ok = false
+          "Parser error: " + f
+      }
+
       //outTest = output.textContent
       output.innerHTML = ""
-      output.appendChild(myText)
+      output.appendChild(s"Type: $typ  --  $myText".render)
 
+      if (ok) scalajs.js.eval(myText)
 
-
-
-
-
-
-     // else output.textContent = "NotValid Input"
+      // else output.textContent = "NotValid Input"
     }
 
 

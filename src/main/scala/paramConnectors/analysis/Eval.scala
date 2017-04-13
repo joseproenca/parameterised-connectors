@@ -233,6 +233,7 @@ object Eval {
     subst(res)
   }
 
+
   /**
     * Finds an instance of the connector, and simplifies it
     *
