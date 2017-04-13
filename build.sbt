@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "junit" % "junit" % "4.12",
   "org.choco-solver" % "choco-solver" % "3.3.1-j7",
   "org.slf4j" % "slf4j-simple" % "1.7.12",
-  "io.github.nicolasstucki" %% "multisets" % "0.3",
+//  "io.github.nicolasstucki" %% "multisets" % "0.3", // multisets - replaced by in-house to work with JavaJS
   "org.scala-lang" % "scala-compiler" % scalaVersion.value
 //   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 )

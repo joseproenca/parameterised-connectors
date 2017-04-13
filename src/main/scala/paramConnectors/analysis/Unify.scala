@@ -3,6 +3,8 @@ package paramConnectors.analysis
 import paramConnectors._
 import TypeCheck.TypeCheckException
 
+import scala.reflect.macros.TypecheckException
+
 /**
  * Created by jose on 20/05/15.
  */
@@ -17,16 +19,22 @@ object Unify {
    * @param const constraint where a unification is searched for.
    * @return a general unification and postponed constraints.
    */
-  def getUnification(const:BExpr,bounded:List[Var]): (Substitution,BExpr) =
-    getUnification(Simplify(const),BVal(b=true),bounded)
+  def getUnification(const:BExpr,bounded:List[Var]): (Substitution,BExpr) = {
+    val simpler = Simplify(const)
+    getUnification(simpler, BVal(b = true), bounded) match {
+      case Some(pair) => pair
+      case None => throw new TypeCheckException(s"Unification failed: ${Show(simpler)} (based on ${Show(const)}).")
+    }
+  }
 
-  private def getUnification(const:BExpr,rest:BExpr,bounded:List[Var]): (Substitution,BExpr) = const match {
+  private def getUnification(const:BExpr,rest:BExpr,bounded:List[Var]): Option[(Substitution,BExpr)] = const match {
     case And(BVal(true)::exps) => getUnification(And(exps),rest,bounded)
-    case And(BVal(false)::_)   => throw new TypeCheckException("Search for unification failed - constraint unsatisfiable.")
+    case And(BVal(false)::_)   => None
+      //throw new TypeCheckException("Search for unification failed - found 'false'.")
     case And((x@BVar(_))::exps) =>
       val s = Substitution(x,BVal(b=true))
-      val (news,newrest) = getUnification(Simplify(s(And(exps))),rest,bounded)
-      (news + (x,BVal(b=true)), newrest)
+      for ((news,newrest) <- getUnification(Simplify(s(And(exps))),rest,bounded))
+        yield (news + (x,BVal(b=true)), newrest)
     case And(EQ(e1, e2)::exps) if e1 == e2 => getUnification(And(exps),rest,bounded)
     case And(EQ(x@IVar(_), y@IVar(_))::exps) if x!=y =>
       if (Utils.isGenVar(x.x))
@@ -50,19 +58,19 @@ object Unify {
     case And((an@AndN(_,_,_,_))::exps)  => getUnification(And(exps),rest & an,bounded)
     //
     case And(And(e1)::exps) => getUnification(And(e1:::exps),rest,bounded)
-    case And(Nil) => (Substitution(),rest)
+    case And(Nil) => Some((Substitution(),rest))
     //
     case _:BVal | _:BVar | _:EQ | _:GT | _:LT | _:GE | _:LE | _:Or | _:Not | _:AndN =>
       getUnification(And(const :: Nil), rest,bounded)
   }
 
-  private def substVar(x:IVar,e:IExpr,exps:List[BExpr],rest:BExpr,bounded:List[Var]): (Substitution,BExpr) = {
+  private def substVar(x:IVar,e:IExpr,exps:List[BExpr],rest:BExpr,bounded:List[Var]): Option[(Substitution,BExpr)] = {
     e match {
       case IVal(n) if n<0 => throw new TypeCheckException(s"Variable $x cannot take the negative value $n.")
       case _ => {}
     }
     val s = Substitution(x , e)
-    var (news,newrest) = getUnification( Simplify(s(And(exps))),rest,bounded)
+    for ((news,newrest) <- getUnification( Simplify(s(And(exps))),rest,bounded))
 //    println(s"### checking if ${Show(x)} == ${Show(e)} has vars in $bounded.")
 //    if (bounded contains x) {
 //      newrest = newrest & EQ(x, e)
@@ -73,7 +81,7 @@ object Unify {
 //        newrest = newrest & EQ(x,e) //avoid repetition (not a big problem)
 //        println("##### yes!")
 //      }
-    (news + (x,e), newrest)
+      yield (news + (x,e), newrest)
 
   }
 }

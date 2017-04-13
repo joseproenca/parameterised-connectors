@@ -149,7 +149,7 @@ object DSL {
     // 5 - solve constraints
     val subst2 = Solver.solve(type4)
     val subst3 = subst2 match {
-      case None => throw new TypeCheckException("Solver failed")
+      case None => throw new TypeCheckException("No solution found: " + Show(type4.const))
       case Some(s2) => if (rest3 == BVal(true)) s2
                        else s2.mkConcrete
     }
@@ -161,6 +161,28 @@ object DSL {
     if (type6.isGeneral)
       type6
     else type4
+  }
+
+  /**
+    * Type check a connector WITHOUT the constraint solving - only using unification and simplifications.
+    * @param c connector to be type-checked
+    * @return the inferred type after simplifications and unification
+    */
+  def lightTypeOf(c:Connector): Type = {
+    // 1 - build derivation tree
+    val type1 = TypeCheck.check(c)
+    // 2 - unify constraints and get a substitution
+    val (subst1,rest1) = Unify.getUnification(type1.const,type1.args.vars)
+    // 3 - apply substitution to the type
+    val rest2 = subst1(rest1)
+    val type2b = Type(type1.args,subst1(type1.i),subst1(type1.j),rest2,type1.isGeneral)
+    // 4 - extend with lost constraints over argument-variables
+    val rest3 = subst1.getConstBoundedVars(type2b)
+    val type3 = Type(type2b.args,type2b.i,type2b.j,rest2 & rest3,type2b.isGeneral)
+    // 4.1 - evaluate and simplify type
+    val type4 = Simplify(type3)
+    // return the final type, without solving the missing constraints
+    type4
   }
 
   /**
