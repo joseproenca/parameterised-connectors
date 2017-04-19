@@ -391,22 +391,22 @@ object Simplify {
     case BAbs(x, c) => BAbs(x,apply(c))
     case IApp(c,a) => (apply(c),apply(a)) match {
       case (IAbs(x,c2),a2) => apply(Substitution(x,a2)(c2))
-      case (Seq(c1,c2),a2) =>
-        if (DSL.typeChecks(IApp(c1,a2))) apply(Seq(IApp(c1,a2),c2))
-        else apply(Seq(c1,IApp(c2,a2)))
-      case (Par(c1,c2),a2) =>
-        if (DSL.typeChecks(IApp(c1,a2))) apply(Par(IApp(c1,a2),c2))
-        else apply(Par(c1,IApp(c2,a2)))
+//      case (Seq(c1,c2),a2) =>
+//        if (DSL.typeChecks(IApp(c1,a2))) apply(Seq(IApp(c1,a2),c2))
+//        else apply(Seq(c1,IApp(c2,a2)))
+//      case (Par(c1,c2),a2) =>
+//        if (DSL.typeChecks(IApp(c1,a2))) apply(Par(IApp(c1,a2),c2))
+//        else apply(Par(c1,IApp(c2,a2)))
       case (c2,a2) => IApp(c2,a2)
     }
     case BApp(c,a) => (apply(c),apply(a)) match {
       case (BAbs(x,c2),a2) => apply(Substitution(x,a2)(c2))
-      case (Seq(c1,c2),a2) =>
-        if (DSL.typeChecks(BApp(c1,a2))) apply(Seq(BApp(c1,a2),c2))
-        else apply(Seq(c1,BApp(c2,a2)))
-      case (Par(c1,c2),a2) =>
-        if (DSL.typeChecks(BApp(c1,a2))) apply(Par(BApp(c1,a2),c2))
-        else apply(Par(c1,BApp(c2,a2)))
+//      case (Seq(c1,c2),a2) =>
+//        if (DSL.typeChecks(BApp(c1,a2))) apply(Seq(BApp(c1,a2),c2))
+//        else apply(Seq(c1,BApp(c2,a2)))
+//      case (Par(c1,c2),a2) =>
+//        if (DSL.typeChecks(BApp(c1,a2))) apply(Par(BApp(c1,a2),c2))
+//        else apply(Par(c1,BApp(c2,a2)))
       case (c2,a2) => BApp(c2,a2)
 //      case (BAbs(x,c2),a2) => apply(Substitution(x,a2)(c2))
 //      case (c2,a2) => BApp(c2,a2)

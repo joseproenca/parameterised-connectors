@@ -212,10 +212,13 @@ object Eval {
     // 4.1 - evaluate and simplify type
     val type4 = Simplify(type_3)
     // 5 - solve constraints
-    val subst2 = Solver.solve(type4)
-    if (subst2.isEmpty) throw new TypeCheckException("Solver failed")
-    var subst = subst2.get //subst_1 ++ subst2.get
-    if (rest3 != BVal(true)) subst = subst.mkConcrete
+//    val subst2 = Solver.solve(type4)
+//    if (subst2.isEmpty) throw new TypeCheckException("Solver failed")
+//    var subst = subst2.get //subst_1 ++ subst2.get
+//    if (rest3 != BVal(true)) subst = subst.mkConcrete
+
+    // UNSAFE -> not checking for constraint solving first...
+    var subst = subst1
 
     var res = c
     for (a <- type4.args.vars){

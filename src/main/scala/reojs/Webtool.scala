@@ -5,7 +5,7 @@ import org.scalajs.dom
 import dom.html
 import paramConnectors.analysis.{Eval, Simplify}
 import paramConnectors.analysis.TypeCheck.TypeCheckException
-import paramConnectors.{DSL, Parser}
+import paramConnectors.{DSL, Parser, Type}
 
 import scalajs.js.annotation.JSExport
 import scalatags.JsDom.all._
@@ -44,13 +44,14 @@ object Webtooljs extends{
 
     box.onkeyup = (e: dom.Event) => {
       var ok = true
-      var typ = ""
+      var typ: Option[Type] = None
 
       val myText = DSL.parse(box.value) match {
         case Parser.Success(result, next) =>
           try {
-            typ = paramConnectors.analysis.Show(paramConnectors.DSL.lightTypeOf(result))
-            paramConnectors.backend.Springy.script(result)
+            val result2 = paramConnectors.analysis.Eval.reduce(result)
+            typ = Some(paramConnectors.DSL.lightTypeOf(result2))
+            paramConnectors.backend.Springy.script(result2)
           }
           catch {
             case e: TypeCheckException =>
@@ -64,7 +65,12 @@ object Webtooljs extends{
 
       //outTest = output.textContent
       output.innerHTML = ""
-      output.appendChild(s"Type: $typ  --  $myText".render)
+      typ match {
+        case Some(x:Type) =>
+          output.appendChild(s"Type: ${paramConnectors.analysis.Show(x)}  -- ${if (!x.isGeneral) "INST -- " else "GEN -- "} $myText".render)
+        case None =>
+          output.appendChild(s"(no type) --  $myText".render)
+      }
 
       if (ok) scalajs.js.eval(myText)
 
