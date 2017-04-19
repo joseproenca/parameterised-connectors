@@ -193,12 +193,13 @@ object Eval {
 
 
   /**
-    * instantiates a connector by finding a suitable substitution and applying it to the connector
+    * instantiates (and simplifies) a connector by finding a suitable substitution and applying it to the connector.
+    * Fails if the instantiation generates a false constraint.
     *
     * @param c
     * @return
     */
-  def instantiate(c:Connector) : Connector = {
+  def instantiate(c:Connector) : Option[Connector] = {
     // 1 - build derivation tree
     val type1 = TypeCheck.check(c)
     // 2 - unify constraints and get a substitution
@@ -217,7 +218,7 @@ object Eval {
 //    var subst = subst2.get //subst_1 ++ subst2.get
 //    if (rest3 != BVal(true)) subst = subst.mkConcrete
 
-    // UNSAFE -> not checking for constraint solving first...
+    // UNSAFE -> not checking for constraint solving first. Constraints may evaluate to false.
     var subst = subst1
 
     var res = c
@@ -233,7 +234,16 @@ object Eval {
         }
       }
     }
-    subst(res)
+
+    val reduced = Simplify(subst(res))
+
+    def check(c:Connector): Boolean = c match {
+      case Seq(c1, c2) => check(c1) && check (c2)
+      case Restr(c, BVal(false)) => false
+      case _ => true
+    }
+
+    if (check(reduced)) Some(reduced) else None
   }
 
 
@@ -243,5 +253,5 @@ object Eval {
     * @param c connector to be reduced
     * @return reduced connector
     */
-  def reduce(c:Connector): Connector = Simplify(instantiate(c))
+  def reduce(c:Connector): Option[Connector] = instantiate(c) //Simplify(instantiate(c))
 }

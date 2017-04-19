@@ -11,6 +11,11 @@ import paramConnectors.analysis.Eval
   */
 object Springy {
 
+  /**
+    * Generates JS instructions to draw a connector, assuming it is instantiated.
+    * @param c
+    * @return
+    */
   def script(c: Connector) = {
     val (edges,nodes) = toSpringEdges(c)
     s"""var graph = new Springy.Graph();
@@ -31,7 +36,7 @@ jQuery(function(){
 <script src="springy.js"></script>
 <script src="springyui.js"></script>
 <script>
-${script(Eval.reduce(c))}
+${script(c)}
 </script>
 <canvas id="springydemo" width="800" height="600" />
 </body>
@@ -84,8 +89,13 @@ ${script(Eval.reduce(c))}
   //////////////////////////
   // generate springy graph
   //////////////////////////
+  /**
+    * Creates an HTML file, assuming the connector is instantiated.
+    * @param c
+    * @param file
+    */
   def toFile(c:Connector,file:File): Unit = {
-    val (edges,nodes) = toSpringEdges(Eval.reduce(c))
+    val (edges,nodes) = toSpringEdges(c)
     val spr = s"""<html>
 <body>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>

@@ -3,8 +3,9 @@ package reojs
 
 import org.scalajs.dom
 import dom.html
-import paramConnectors.analysis.{Eval, Simplify}
+import paramConnectors.analysis.{Eval, Show, Simplify}
 import paramConnectors.analysis.TypeCheck.TypeCheckException
+import paramConnectors.backend.Springy
 import paramConnectors.{DSL, Parser, Type}
 
 import scalajs.js.annotation.JSExport
@@ -13,7 +14,7 @@ import scalatags.JsDom.all._
 
 
 @JSExport
-object Webtooljs extends{
+object Webtool extends{
   @JSExport
   def main(target: html.Div, canvas: html.Canvas) ={
 
@@ -49,9 +50,14 @@ object Webtooljs extends{
       val myText = DSL.parse(box.value) match {
         case Parser.Success(result, next) =>
           try {
-            val result2 = paramConnectors.analysis.Eval.reduce(result)
-            typ = Some(paramConnectors.DSL.lightTypeOf(result2))
-            paramConnectors.backend.Springy.script(result2)
+            Eval.reduce(result) match {
+              case Some(reduc) =>
+                typ = Some(DSL.lightTypeOf(reduc))
+                Springy.script(reduc)
+              case _ =>
+                ok = false
+                "Failed to reduce connector: "+Show(Simplify(result))
+            }
           }
           catch {
             case e: TypeCheckException =>

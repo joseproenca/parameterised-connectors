@@ -1,7 +1,8 @@
 package paramConnectors.backend
 
 import paramConnectors.Connector
-import paramConnectors.analysis.Eval
+import paramConnectors.analysis.{Eval, Show, Simplify}
+import paramConnectors.analysis.TypeCheck.TypeCheckException
 
 /**
   * Created by jose on 21/07/16.
@@ -15,15 +16,19 @@ object Dot {
     * @return dot graph
     */
   def apply(c:Connector): String = {
-    val (edges,ins,outs,comps) = toDotEdges(c)
-    "digraph G {\n  rankdir=LR;\n  node [margin=0 width=0.2 height=0.2 label=\"\"]\n"++
-      "  edge [arrowsize=0.7]\n"++
-      s"{ rank=min;\n  node [style=filled,shape=doublecircle]\n$ins}\n"++
-      s"{ rank=max;\n  node [style=filled,shape=doublecircle]\n$outs}\n$comps\n$edges}"
+    Eval.reduce(c) match {
+      case Some(red) =>
+        val (edges,ins,outs,comps) = toDotEdges(c)
+        "digraph G {\n  rankdir=LR;\n  node [margin=0 width=0.2 height=0.2 label=\"\"]\n"++
+          "  edge [arrowsize=0.7]\n"++
+          s"{ rank=min;\n  node [style=filled,shape=doublecircle]\n$ins}\n"++
+          s"{ rank=max;\n  node [style=filled,shape=doublecircle]\n$outs}\n$comps\n$edges}"
+      case None => throw new TypeCheckException("Failed to reduce connector: "+Show(Simplify(c)))
+    }
   }
 
   private def toDotEdges(c:Connector): (String,String,String,String) = {
-    val g = Graph(Eval.reduce(c))
+    val g = Graph(c)
     val res = new StringBuilder
     for (e <- g.edges) {
       res append ((e.prim.name,e.ins,e.outs) match {

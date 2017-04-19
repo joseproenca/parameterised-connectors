@@ -46,14 +46,14 @@ class TestReduce {
 
   private def testOK(con:Connector,str:String) = {
     val c = Eval.reduce(con)
-    assert(typeChecks(c))
-    assertEquals(Show(c), str)
+    assert(typeChecks(c.get))
+    assertEquals(Show(c.get), str)
   }
 
   private def testInstOK(con:Connector,str:String) = {
     val c = Eval.instantiate(con)
-    assert(typeChecks(c))
-    assertEquals(Show(c), str)
+    assert(typeChecks(c.get))
+    assertEquals(Show(c.get), str)
   }
 
 }
