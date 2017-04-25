@@ -1,0 +1,34 @@
+body {
+    background-color: Gainsboro;
+}
+head {
+    margin-center: 0px;
+    color: black;
+}
+div {
+    color: black;
+    margin-left: 20px;
+}
+div.second{
+    color: yellow;
+}
+
+div.container {
+    width: 80%;
+    height: 200px;
+    background: aqua;
+    margin: auto;
+    padding: 10px;
+}
+div.one {
+    width: 15%;
+    height: 200px;
+    background: red;
+    float: left;
+}
+div.two {
+    margin-left: 15%;
+    height: 200px;
+    background: black;
+}
+

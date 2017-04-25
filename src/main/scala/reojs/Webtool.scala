@@ -2,7 +2,7 @@ package reojs
 
 
 import org.scalajs.dom
-import dom.html
+import dom.{MouseEvent, html}
 import paramConnectors.analysis.{Eval, Show, Simplify}
 import paramConnectors.analysis.TypeCheck.TypeCheckException
 import paramConnectors.backend.Springy
@@ -25,6 +25,7 @@ object Webtool extends{
     ).render
     var testString = ""
     val output = span.render
+    val output2 = span.render
 
     lazy val output3 = div(
       height:="400px",
@@ -41,9 +42,11 @@ object Webtool extends{
 */
     var outTest = ""
 
+/* Function that parses the expressions written in the input box and tests if they're valid
+and generates the output if they are.
+*/
 
-
-    box.onkeyup = (e: dom.Event) => {
+    def fgenerate(): Unit ={
       var ok = true
       var typ: Option[Type] = None
 
@@ -70,30 +73,82 @@ object Webtool extends{
       }
 
       //outTest = output.textContent
+      output2.innerHTML = ""
       output.innerHTML = ""
       typ match {
         case Some(x:Type) =>
           output.appendChild(s"Type: ${paramConnectors.analysis.Show(x)}  -- ${if (!x.isGeneral) "INST -- " else "GEN -- "} $myText".render)
         case None =>
-          output.appendChild(s"(no type) --  $myText".render)
+          output2.appendChild(s"(no type) --  $myText".render)
       }
 
       if (ok) scalajs.js.eval(myText)
 
       // else output.textContent = "NotValid Input"
+
+
     }
+
+//Buttons that automatically fill in the box for a faster use:
+    val fifoButton = button("fifo").render
+    fifoButton.onclick = (_:MouseEvent) => {
+      box.value = "fifo"
+      fgenerate()
+}
+    val drainButton = button("drain").render
+    drainButton.onclick = (_:MouseEvent) => {
+      box.value = "drain"
+      fgenerate()
+    }
+
+    val writerButton = button("writer").render
+    writerButton.onclick = (_:MouseEvent) => {
+      box.value = "writer"
+      fgenerate()
+    }
+
+    val readerButton = button("reader").render
+    readerButton.onclick = (_:MouseEvent) => {
+      box.value = "reader"
+      fgenerate()
+    }
+
+    val duplButton = button("dupl").render
+    duplButton.onclick = (_:MouseEvent) => {
+      box.value = "dupl"
+      fgenerate()
+    }
+
+    val mergerButton = button("merger").render
+    mergerButton.onclick = (_:MouseEvent) => {
+      box.value = "merger"
+      fgenerate()
+    }
+    val tButton = button("(fifo*writer) & drain").render
+    tButton.onclick = (_:MouseEvent) => {
+      box.value = "(fifo*writer) & drain"
+      fgenerate()
+    }
+/*
+  List of all the buttons generated above
+ */
+    val buttons = Seq(fifoButton,drainButton,writerButton,readerButton,duplButton,mergerButton,tButton)
+
+    /*
+    Will evaluate the expression being written in the input box
+     */
+    box.onkeyup = (e: dom.Event) => {
+      fgenerate()
+      }
 
 
     def renderOps = ul(
       for {
-        ops <- operators
-        if ops.toLowerCase.startsWith(
-          box.value.toLowerCase
-        )
-      } yield li(ops)
+        ops <- buttons
+      } yield ol(ops)
     ).render
 
-    val outOperators = div(renderOps).render
+    val outButtons = div(renderOps).render
 
 
 
@@ -104,9 +159,11 @@ object Webtool extends{
           "Write the structure you want to see: "
         ),
         div(box),
-        div(outOperators),
+        div(outButtons),
+        div(output2),
         div(output)
       ).render
     )
   }
 }
+
