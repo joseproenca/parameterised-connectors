@@ -77,9 +77,11 @@ and generates the output if they are.
       output.innerHTML = ""
       typ match {
         case Some(x:Type) =>
-          output.appendChild(s"Type: ${paramConnectors.analysis.Show(x)}  -- ${if (!x.isGeneral) "INST -- " else "GEN -- "} $myText".render)
+          output.appendChild(s"Type: ${paramConnectors.analysis.Show(x)}".render)
+        //  -- ${if (!x.isGeneral) "INST -- " else "GEN -- "} $myText".render)
         case None =>
-          output2.appendChild(s"(no type) --  $myText".render)
+//          output2.appendChild(s"(no type)".render)
+          output2.appendChild(s"(no type) -- $myText".render)
       }
 
       if (ok) scalajs.js.eval(myText)
@@ -129,10 +131,15 @@ and generates the output if they are.
       box.value = "(fifo*writer) & drain"
       fgenerate()
     }
+    val lButton = button("\\x . ((fifo^x)*writer) & (drain^3)").render
+    lButton.onclick = (_:MouseEvent) => {
+      box.value = "\\x . ((fifo^x)*writer) & (drain^3)"
+      fgenerate()
+    }
 /*
   List of all the buttons generated above
  */
-    val buttons = Seq(fifoButton,drainButton,writerButton,readerButton,duplButton,mergerButton,tButton)
+    val buttons = Seq(fifoButton,drainButton,writerButton,readerButton,duplButton,mergerButton,tButton,lButton)
 
     /*
     Will evaluate the expression being written in the input box
