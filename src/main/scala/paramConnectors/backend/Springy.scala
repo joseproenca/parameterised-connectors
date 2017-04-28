@@ -71,7 +71,7 @@ ${script(c)}
         bounds += e.prim.name + "_" + e.outs.head
       }
       if (e.outs.isEmpty && e.ins.size==1) {
-        edges ::= s"['${e.prim.name + "_" + e.ins.head}', '${e.ins.head}']"
+        edges ::= s"['${e.ins.head}', '${e.prim.name + "_" + e.ins.head}']"
         bounds += e.prim.name + "_" + e.ins.head
       }
     }

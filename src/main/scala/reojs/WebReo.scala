@@ -49,7 +49,9 @@ object WebReo extends{
 
       val buttons = div( style:="display:block; padding:2pt", //ul(
         for (ops <- Seq(
-          "fifo","merger","dupl","drain","(fifo*writer) & drain","\\x . ((fifo^x)*writer) & (drain^3)",
+          "writer","reader","fifo","merger","dupl","drain","(fifo*writer) & drain",
+          "\\x . ((fifo^x)*writer) & (drain^3)",
+          "\\b:B . (b? fifo + dupl) & merger",
           "dupl & (dupl*id) & (((lossy*lossy) & (dupl*dupl) & (id*swap*id) & (id*id*merger))*id) & (id*id*drain)"
         )) yield //ol(genButton(ops,inputBox,outputBox,canvasDiv))
           genButton(ops,inputBox,outputBox,canvasDiv)

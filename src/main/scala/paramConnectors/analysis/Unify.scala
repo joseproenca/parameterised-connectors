@@ -31,6 +31,10 @@ object Unify {
     case And(BVal(true)::exps) => getUnification(And(exps),rest,bounded)
     case And(BVal(false)::_)   => None
       //throw new TypeCheckException("Search for unification failed - found 'false'.")
+    case And((Not(x@BVar(_)))::exps) =>
+      val s = Substitution(x,BVal(b=false))
+      for ((news,newrest) <- getUnification(Simplify(s(And(exps))),rest,bounded))
+        yield (news + (x,BVal(b=false)), newrest)
     case And((x@BVar(_))::exps) =>
       val s = Substitution(x,BVal(b=true))
       for ((news,newrest) <- getUnification(Simplify(s(And(exps))),rest,bounded))
