@@ -139,6 +139,8 @@ object Simplify {
     case EQ(Div(e1,e2), e3) => simpAux(EQ(e1,Mul(e2,e3)))
     case EQ(e1,Div(e2, e3)) => simpAux(EQ(Mul(e1,e3),e2))
       //
+    case EQ(ITE(b,ifTrue,ifFalse),e2) if ifTrue == e2 => simpAux(b)
+    case EQ(ITE(b,ifTrue,ifFalse),e2) if ifFalse == e2 => simpAux(Not(b))
     case EQ(e1, e2) => //EQ(apply(Sub(e1,e2)),IVal(0))
       val eq = iexpr2lits(Eval(Sub(e1,e2)))
       optimiseEq(eq)
