@@ -1,5 +1,7 @@
 package paramConnectors
 
+import paramConnectors.analysis.Show
+
 import scala.util.matching.Regex
 import scala.util.parsing.combinator._
 
@@ -39,7 +41,7 @@ object Parser extends RegexParsers {
     lit ~ continuation ^^ {case l ~ f => f(l) }
 
   def continuation: Parser[Connector => Connector] =
-    compBuilder | parBuilder | expBuilder | end
+    compBuilder | parBuilder | expBuilder | ifBuilder | end
 
   // Literals:
   def lit: Parser[Connector]   = prim | lambda | brck
@@ -63,6 +65,8 @@ object Parser extends RegexParsers {
   def compBuilder:Parser[Connector=>Connector] = "&" ~ conn   ^^ {case _~ c => _ & c}
   def parBuilder: Parser[Connector=>Connector] = "*" ~ conn   ^^ {case _~ c => _ * c}
   def expBuilder: Parser[Connector=>Connector] = "^" ~ intExp ^^ {case _~ i => _ ^ i}
+  // simplification - only a single feature in the "if" statement
+  def ifBuilder:  Parser[Connector=>Connector] = "?" ~ conn ~ "+" ~ conn ^^ {case _~c1 ~ _ ~ c2 => c => Choice(BVar(Show(c)), c1, c2) }
   def end:        Parser[Connector=>Connector] = "" ^^ { _ => (x: Connector) => x }
 
   // Integer expressions
