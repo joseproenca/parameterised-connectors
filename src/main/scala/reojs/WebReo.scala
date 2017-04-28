@@ -57,7 +57,7 @@ object WebReo extends{
 
       val contentDiv = div(
         style:="margin-left: 5pt;",
-        h1("Web ReoConnectors"),
+        h1("Web Reo Connectors"),
         p(
           "Write the structure you want to see: "
         ),
@@ -87,6 +87,7 @@ object WebReo extends{
     DSL.parse(input) match {
       case Parser.Success(result, _) =>
         try {
+          outputInfo.appendChild(genType("[ "+Show(DSL.lightTypeOf(result))+" ]"))
           Eval.reduce(result) match {
             case Some(reduc) =>
               // GOT A TYPE
