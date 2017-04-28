@@ -34,6 +34,8 @@ object Parser extends RegexParsers {
     case "lossy"    => DSL.lossy
     case "merger"   => DSL.merger
     case "swap"     => DSL.swap
+    case "writer"   => DSL.Prim("writer",Port(IVal(0)),Port(IVal(1)))
+    case "reader"   => DSL.Prim("reader",Port(IVal(1)),Port(IVal(0)))
     case _          => DSL.str2conn(s)
   }
 
