@@ -7,6 +7,7 @@ import paramConnectors.analysis.TypeCheck.TypeCheckException
 import paramConnectors.backend.Springy
 import paramConnectors.{DSL, Parser, Type}
 
+import scala.scalajs.js.JavaScriptException
 import scalajs.js.annotation.JSExport
 import scalatags.JsDom.all._
 
@@ -93,7 +94,9 @@ object WebReo extends{
           Eval.reduce(result) match {
             case Some(reduc) =>
               // GOT A TYPE
-              outputInfo.appendChild(genType(Show(DSL.lightTypeOf(reduc))))
+              outputInfo.appendChild(genType(Show(reduc)+":\n  "+
+                                             Show(DSL.lightTypeOf(reduc))))
+//              outputInfo.appendChild(genType(Springy.script(reduc)))
               clearCanvas(canvas)
               scalajs.js.eval(Springy.script(reduc)
               )
@@ -105,6 +108,7 @@ object WebReo extends{
         catch {
           // type error
           case e: TypeCheckException => outputInfo.appendChild(genError("Type error: " + e.getMessage))
+          case e: JavaScriptException => outputInfo.appendChild(genError("JavaScript error : "+e.getMessage+" - "+e.getClass))
         }
         // parse error
       case f: Parser.NoSuccess => outputInfo.appendChild(genError("Parser error: " + f))

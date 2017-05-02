@@ -68,11 +68,12 @@ ${script(c)}
         }
       if (e.ins.isEmpty && e.outs.size == 1) {
         edges ::= s"['${e.prim.name + "_" + e.outs.head}', '${e.outs.head}']"
-        bounds += e.prim.name + "_" + e.outs.head
+        bounds += (e.prim.name + "_" + e.outs.head)
+        nodes += e.outs.head.toString
       }
       if (e.outs.isEmpty && e.ins.size==1) {
         edges ::= s"['${e.ins.head}', '${e.prim.name + "_" + e.ins.head}']"
-        bounds += e.prim.name + "_" + e.ins.head
+        bounds += (e.prim.name + "_" + e.ins.head)
       }
     }
     bounds ++= (g.ins ++ g.outs).map(_.toString)
