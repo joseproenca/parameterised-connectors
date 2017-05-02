@@ -31,51 +31,61 @@ object WebReo extends{
   @JSExport
   def main(content: html.Div) = {
 
-      val inputBox = input(
-        `type`:="text",
-        placeholder:="Type Here!",
-        width:="400px"
-      ).render
-      val outputBox = div.render
+//      val inputBox = input(
+//        `type`:="text",
+//        placeholder:="Type Here!",
+//        width:="400px"
+//      ).render
+//val inputArea = textarea(rows:="10",cols:="36",placeholder:="dupl & (fifo * lossy)").render
+    val inputArea = textarea(rows:="10",width:="100%",placeholder:="dupl & (fifo * lossy)").render
+    val outputBox = div.render
 
-      val canvasDiv = div(`class`:="col-sm-5",canvasBox).render
+    val canvasDiv = div(`class`:="col-sm-5",canvasBox).render
 
-      /**
-      Will evaluate the expression being written in the input box
-        */
-      inputBox.onkeyup = (e: dom.Event) => {
-        fgenerate(inputBox.value,outputBox,canvasDiv)
-      }
+    fgenerate("dupl & (fifo * lossy)",outputBox,canvasDiv)
 
-
-      val buttons = div( style:="display:block; padding:2pt", //ul(
-        for (ops <- Seq(
-          "writer","reader","fifo","merger","dupl","drain","(fifo*writer) & drain",
-          "\\x . ((fifo^x)*writer) & (drain^3)",
-          "\\b:B . (b? fifo + dupl) & merger",
-          "dupl & (dupl*id) & (((lossy*lossy) & (dupl*dupl) & (id*swap*id) & (id*id*merger))*id) & (id*id*drain)"
-        )) yield //ol(genButton(ops,inputBox,outputBox,canvasDiv))
-          genButton(ops,inputBox,outputBox,canvasDiv)
-      ).render
-
-      val contentDiv = div(
-        style:="margin-left: 5pt;",
-        h1("Web Reo Connectors"),
-        p(
-          "Write the structure you want to see: "
-        ),
-        div(id:="inputBox",marginBottom:="2pt",inputBox),
-        div(`class`:="row",
-          div(`class`:="col-sm-3",
-            div(id:="outputBox",outputBox),
-            div(id:="buttons",buttons)
-          ),
-          canvasDiv
-        )
-      )
-
-      content.appendChild(contentDiv.render)
+    /**
+    Will evaluate the expression being written in the input box
+      */
+//      inputBox.onkeyup = (e: dom.Event) => {
+//        fgenerate(inputBox.value,outputBox,canvasDiv)
+//      }
+    inputArea.onkeyup = (e: dom.Event) => {
+      fgenerate(inputArea.value,outputBox,canvasDiv)
     }
+
+
+    val buttons = div( style:="display:block; padding:2pt", //ul(
+      for (ops <- Seq(
+        "writer","reader","fifo","merger","dupl","drain","(fifo*writer) & drain",
+        "\\x . ((fifo^x)*writer) & (drain^3)",
+        "\\b:B . (b? fifo + dupl) & merger",
+        "dupl & (dupl*id) & (((lossy*lossy) & (dupl*dupl) & (id*swap*id) & (id*id*merger))*id) & (id*id*drain)"
+      )) yield //ol(genButton(ops,inputBox,outputBox,canvasDiv))
+        genButton(ops,inputArea,outputBox,canvasDiv)
+    ).render
+
+    val header = div(id:="header",h1("Web-Reo Connectors"))
+
+    val contentDiv = div(
+      id:="content",
+//        p(
+//          "Write the structure you want to see: "
+//        ),
+//        div(id:="inputBox",marginBottom:="2pt",inputBox),
+      div(`class`:="row",
+        div(`class`:="col-sm-3",
+          div(id:="textBox",inputArea),
+          div(id:="outputBox",outputBox),
+          div(id:="buttons",buttons)
+        ),
+        canvasDiv
+      )
+    )
+
+    content.appendChild(header.render)
+    content.appendChild(contentDiv.render)
+  }
 
 
   /**
@@ -126,7 +136,7 @@ object WebReo extends{
   private def genError(s:String): html.Paragraph =
     p(s).render
 
-  private def genButton(s:String,inputBox:html.Input,outputInfo:html.Div,canvas:html.Div): html.Button = {
+  private def genButton(s:String,inputBox:html.TextArea,outputInfo:html.Div,canvas:html.Div): html.Button = {
     val b = button(s).render
     b.onclick = (_:MouseEvent) => {
       inputBox.value = s

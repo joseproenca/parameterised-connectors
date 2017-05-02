@@ -32,3 +32,10 @@ div.two {
     background: black;
 }
 
+#header {
+  display: block;
+  background-color: #bbf;
+  text-align: center;
+  padding: 10px;
+}
+

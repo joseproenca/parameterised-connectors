@@ -10,6 +10,7 @@
 
     <title>Build your Reo Connectors</title>
 
+    <link href="css/style.css" rel="stylesheet">
     <!-- Bootstrap core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap theme -->
@@ -27,7 +28,7 @@
 
   <body>
 
-  <div id="content"></div>
+  <div id="contentWrap"></div>
   
   </body>
 
@@ -40,7 +41,7 @@
   <script type="text/javascript" src="../../target/scala-2.11/parameterised-connectors-fastopt.js"></script>
 
   <script>
-    reojs.WebReo().main(document.getElementById('content'));
+    reojs.WebReo().main(document.getElementById('contentWrap'));
   </script>
 
 </html>

@@ -1,0 +1,11 @@
+#header {
+    display: block;
+    background-color: #c2d3e0;
+    text-align: center;
+    padding: 1px;
+}
+
+#content {
+  margin-left: 5pt;
+  margin-top: 5pt;
+}
