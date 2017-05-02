@@ -65,7 +65,7 @@ object WebReo extends{
         genButton(ops,inputArea,outputBox,canvasDiv)
     ).render
 
-    val header = div(id:="header",h1("Web-Reo Connectors"))
+    val header = div(id:="header",h1("Build Reo Families"))
 
     val contentDiv = div(
       id:="content",
