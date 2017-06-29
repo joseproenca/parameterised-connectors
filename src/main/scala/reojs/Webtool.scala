@@ -9,15 +9,24 @@ import paramConnectors.backend.Springy
 import paramConnectors.{DSL, Parser, Type}
 
 import scalajs.js.annotation.JSExport
+import scala.scalajs.js
+import js.DynamicImplicits._
+import js.Dynamic.{global => g}
 import scalatags.JsDom.all._
 
 
 
+object Mine extends js.Object {
+  def myFunction():String = ??? //this is just a simple example and I know this can be done completely in Scala, but just go with it.
+}
 @JSExport
 object Webtool extends{
   @JSExport
   def main(target: html.Div, canvas: html.Canvas) ={
-
+    val Mine = myFunction: function() {
+      var x = document.getElementById("fname");
+      x.value = x.value.toUpperCase();
+    }
     val operators = Seq("fifo", "drain", "writer", "reader", "dupl", "merger", "Y", "teste", "(fifo*writer) & drain")
     val box = input(
       `type`:="text",
@@ -156,7 +165,6 @@ and generates the output if they are.
     ).render
 
     val outButtons = div(renderOps).render
-
 
 
     target.appendChild(
