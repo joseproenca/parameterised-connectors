@@ -13,7 +13,6 @@ case class Graph(edges:List[Graph.Edge],ins:List[Int], outs:List[Int]) {
   def ++(other:Graph) = Graph(edges++other.edges,ins++other.ins,outs++other.outs)
 }
 
-
 object Graph {
   /** Represents a primitive of [[Prim]] from a list of input nodes to a list of output nodes.
     */
@@ -108,3 +107,4 @@ object Graph {
       (edge::es2,m2)
   }
 }
+
