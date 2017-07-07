@@ -19,8 +19,14 @@ object Springy {
   def script(c: Connector) = {
     val (edges,nodes) = toSpringEdges(c)
     s"""var graph = new Springy.Graph();
-graph.addNodes($nodes);
-graph.addEdges( $edges );
+
+${(for (n <- nodes)
+        yield if (n.contains("_")) s"var $n = graph.newNode({label:'${n.span(_!='_')._1}'});"
+              else s"var $n = graph.newNode({label:'●'});").mkString(" ")
+    }
+${(for (e <- edges)
+        yield s"graph.newEdge($e);").mkString(" ")}
+
 jQuery(function(){
   var springy = jQuery('#springydemo').springy({
     graph: graph
@@ -42,7 +48,7 @@ ${script(c)}
 </body>
 </html>"""
 
-  private def toSpringEdges(c:Connector): (String,String) = {
+  private def toSpringEdges(c:Connector): (List[String],List[String]) = {
     val g = Graph(c)
 //    val g = Graph(c)
     val nodes  = scala.collection.mutable.Set[String]()
@@ -50,36 +56,37 @@ ${script(c)}
     var edges  = List[String]()
     for (e <- g.edges) {
       for (i <- e.ins; o <- e.outs) {
-        edges ::= s"['$i', '$o', {label: '${e.prim.name}'}]"
-        nodes += i.toString
-        nodes += o.toString
+        edges ::= s"n$i, n$o, {label: '${e.prim.name}'}"
+        nodes += "n"++i.toString
+        nodes += "n"++o.toString
       }
       if (e.ins.isEmpty && e.outs.size>1)
         for (i <- e.outs; o <- e.outs; if e.outs.indexOf(i)<e.outs.indexOf(o)) {
-          edges ::= s"['$i', '$o', {label: '${e.prim.name}'}]"
-          edges ::= s"['$o', '$i']"
-          nodes += i.toString
+          edges ::= s"n$i, n$o, {label: '${e.prim.name}'}"
+          edges ::= s"n$o, n$i"
+          nodes += "n"++i.toString
         }
       if (e.outs.isEmpty && e.ins.size>1)
         for (i <- e.ins; o <- e.ins; if e.ins.indexOf(i)<e.ins.indexOf(o)) {
-          edges ::= s"['$i', '$o', {label: '${e.prim.name}'}]"
-          edges ::= s"['$o', '$i']"
-          nodes += i.toString
+          edges ::= s"n$i, n$o, {label: '${e.prim.name}'}"
+          edges ::= s"n$o, n$i"
+          nodes += "n"++i.toString
         }
       if (e.ins.isEmpty && e.outs.size == 1) {
-        edges ::= s"['${e.prim.name + "_" + e.outs.head}', '${e.outs.head}']"
+        edges ::= s"${e.prim.name + "_" + e.outs.head}, n${e.outs.head}"
         bounds += (e.prim.name + "_" + e.outs.head)
-        nodes += e.outs.head.toString
+        nodes += "n"++e.outs.head.toString
       }
       if (e.outs.isEmpty && e.ins.size==1) {
-        edges ::= s"['${e.ins.head}', '${e.prim.name + "_" + e.ins.head}']"
+        edges ::= s"n${e.ins.head}, ${e.prim.name + "_" + e.ins.head}"
         bounds += (e.prim.name + "_" + e.ins.head)
       }
     }
-    bounds ++= (g.ins ++ g.outs).map(_.toString)
+    bounds ++= (g.ins ++ g.outs).map("n"++_.toString)
     nodes --= bounds
 
-    (edges.mkString(", "),(nodes++bounds).map(x=>s"'$x'").mkString(", "))
+//    (edges.mkString(", "),(nodes++bounds).map(x=>s"'$x'").mkString(", "))
+    (edges,(nodes++bounds).toList)
     //    val bounds = new StringBuilder
     //    for (i <- g.ins ++ g.outs ++ comps)
     //      bounds append s"  $i [style=filled]\n"
@@ -105,9 +112,16 @@ $springy_min
 $springyui_min
 
 var graph = new Springy.Graph();
-graph.addNodes($nodes);
+//graph.addNodes($nodes);
+//graph.addEdges( $edges );
 
-graph.addEdges( $edges );
+${(for (n <- nodes)
+      yield if (n.contains("_")) s"var $n = graph.newNode({label:'${n.span(_!='_')._1}'});"
+      else s"var $n = graph.newNode({label:'●'});").mkString(" ")
+    }
+${(for (e <- edges)
+      yield s"graph.newEdge($e);").mkString(" ")}
+
 
 jQuery(function(){
   var springy = jQuery('#springydemo').springy({

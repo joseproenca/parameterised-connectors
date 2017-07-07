@@ -19,7 +19,7 @@ import scalatags.JsDom.all._
 object WebReo extends{
 
   private val canvasBox = canvas(
-    style:="border: black;border-width: thin;border-style: solid;margin: auto;",
+    style:="border: 'black'; border-width: thin;border-style: solid;margin: auto;",
 //    width:="600px",
 //    height:="450px",
     attr("width"):="600px",
@@ -61,8 +61,7 @@ object WebReo extends{
         "\\x . ((fifo^x)*writer) & (drain^3)",
         "\\b:B . (b? fifo + dupl) & merger",
         "dupl & (dupl*id) & (((lossy*lossy) & (dupl*dupl) & (id*swap*id) & (id*id*merger))*id) & (id*id*drain)"
-      )) yield //ol(genButton(ops,inputBox,outputBox,canvasDiv))
-        genButton(ops,inputArea,outputBox,canvasDiv)
+      )) yield genButton(ops,inputArea,outputBox,canvasDiv)
     ).render
 
     val header = div(id:="header",h1("Build Reo Families"))
@@ -106,10 +105,9 @@ object WebReo extends{
               // GOT A TYPE
               outputInfo.appendChild(genType(Show(reduc)+":\n  "+
                                              Show(DSL.lightTypeOf(reduc))))
-//              outputInfo.appendChild(genType(Springy.script(reduc)))
               clearCanvas(canvas)
-              scalajs.js.eval(Springy.script(reduc)
-              )
+//              outputInfo.appendChild(genError(Springy.script(reduc)))
+              scalajs.js.eval(Springy.script(reduc))
             case _ =>
               // Failed to simplify
               outputInfo.appendChild(genError("Failed to reduce connector: "+Show(Simplify(result))))
