@@ -22,7 +22,7 @@ object Parser extends RegexParsers {
 
 
   override def skipWhitespace = true
-  override val whiteSpace: Regex = "[ \t\r\f]+".r
+  override val whiteSpace: Regex = "[ \t\r\f\n]+".r
   val identifier: Parser[String] = """[a-z][a-zA-Z0-9_]*""".r
 
   /** Parses basic primitives */
@@ -47,6 +47,8 @@ object Parser extends RegexParsers {
   def combinator: Parser[Connector => Connector] =
     "&" ~ conn   ^^ {case _~ c => (_:Connector) & c} |
     "*" ~ conn   ^^ {case _~ c => (_:Connector) * c} |
+    "^" ~ "("~identifier ~ "<--" ~ iexpr ~")" ^^
+      {case _~_~x~_~a~_=>(_:Connector)^(IVar(x)<--a)}|
     "^" ~ iexpr  ^^ {case _~ i => (_:Connector) ^ i} |
     "|" ~ bexpr  ^^ {case _~ b => (_:Connector) | b} |
     bexpr        ^^ {b => (_: Connector)(b)}         |
@@ -55,6 +57,8 @@ object Parser extends RegexParsers {
 
   // Connector Literals:
   def lit: Parser[Connector] =
+    "Tr_"~iexpr~conn                ^^ {case _~e~c     => Trace(Port(e),c)}        |
+    "sym"~"("~iexpr~","~iexpr~")"   ^^ {case _~_~e1~_~e2~_ => Symmetry(Port(e1),Port(e2))} |
     bexpr ~ "?" ~ conn ~ "+" ~ conn ^^ {case b~_~c1~_~c2 => Choice(b,c1,c2)}       |
     "\\" ~ identifier ~ lambdaCont  ^^ {case _~ s ~ cont => cont(DSL.str2IVar(s))} |
     "(" ~ conn ~ ")"                ^^ {case _ ~ c ~ _ => c}                       |

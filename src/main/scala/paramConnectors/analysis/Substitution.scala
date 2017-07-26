@@ -234,6 +234,22 @@ object Substitution {
   def apply(x:BVar,e:BExpr) = new Substitution(List(BItem(x,e)))
 //  def apply(p:(IVar,IExpr)) = new Substitution(List(IItem(p._1,p._2)))
 //  def apply(p:(BVar,BExpr)) = new Substitution(List(BItem(p._1,p._2)))
+
+  def replacePrim(s:String,c:Connector,by:Connector): Connector = c match {
+    case Prim(name,_,_,_) if name == s => by
+    case Seq(c1, c2)   => Seq(replacePrim(s,c1,by),replacePrim(s,c2,by))
+    case Par(c1, c2)   => Par(replacePrim(s,c1,by),replacePrim(s,c2,by))
+    case Trace(i, c)   => Trace(i,replacePrim(s,c,by))
+    case Exp(a, c)     => Exp(a,replacePrim(s,c,by))
+    case ExpX(x, a, c) => ExpX(x,a,replacePrim(s,c,by))
+    case IAbs(x, c)    => IAbs(x,replacePrim(s,c,by))
+    case BAbs(x, c)    => BAbs(x,replacePrim(s,c,by))
+    case IApp(c, a)    => IApp(replacePrim(s,c,by),a)
+    case BApp(c, b)    => BApp(replacePrim(s,c,by),b)
+    case Restr(c, phi) => Restr(replacePrim(s,c,by),phi)
+    case Choice(b, c1, c2) => Choice(b,replacePrim(s,c1,by),replacePrim(s,c2,by))
+    case _ => c
+  }
 }
 
 
