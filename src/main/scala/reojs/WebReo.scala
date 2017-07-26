@@ -1,4 +1,4 @@
-package reojs
+/**package reojs
 
 import org.scalajs.dom
 import dom.{MouseEvent, html}
@@ -108,6 +108,8 @@ object WebReo extends{
               clearCanvas(canvas)
 //              outputInfo.appendChild(genError(Springy.script(reduc)))
               scalajs.js.eval(Springy.script(reduc))
+              //mudar esta linha para utilizar d3 com novo grafo
+              //e parametros em scala.js
             case _ =>
               // Failed to simplify
               outputInfo.appendChild(genError("Failed to reduce connector: "+Show(Simplify(result))))
@@ -142,4 +144,22 @@ object WebReo extends{
     }
     b
   }
+}
+  */
+
+package reojs
+
+import scala.scalajs.js
+import org.scalajs.dom
+import org.singlespaced.d3js.d3
+import org.singlespaced.d3js.Ops._
+
+
+object WebReo extends js.JSApp {
+
+  def main() {
+    val sel=d3.selectAll("div").data(js.Array(5,2,4,6))
+    sel.style("width", (d:Int) => d*2 )
+  }
+
 }
