@@ -23,7 +23,7 @@ object Dot {
   }
 
   private def toDotEdges(c:Connector): (String,String,String,String) = {
-    val g = Graph(Eval.reduce(c))
+    val g = ReoGraph(Eval.reduce(c))
     val res = new StringBuilder
     for (e <- g.edges) {
       res append ((e.prim.name,e.ins,e.outs) match {
@@ -53,7 +53,7 @@ object Dot {
     (res.toString,ins.toString,outs.toString,comps)
   }
 
-  private def toDotComps(es: List[Graph.Edge]): String = {
+  private def toDotComps(es: List[ReoGraph.Edge]): String = {
     val res = new StringBuilder
     for (e <- es) {
       (e.ins,e.outs) match {
@@ -67,7 +67,7 @@ object Dot {
     res.toString()
   }
 
-  private def toDotEdgeGeneric(e:Graph.Edge): String = {
+  private def toDotEdgeGeneric(e:ReoGraph.Edge): String = {
     val res = new StringBuilder
     for (i <- e.ins; o <- e.outs) // in to out
       res append s"  $i -> $o [label=${e.prim.name}];\n"

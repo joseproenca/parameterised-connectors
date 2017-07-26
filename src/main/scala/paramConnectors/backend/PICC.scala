@@ -53,9 +53,9 @@ object PICC {
     * @return [[paramConnectors]] connector
     */
   def apply(c:Connector):Primitive = {
-    val g = Graph(Eval.reduce(c))
+    val g = ReoGraph(Eval.reduce(c))
     var res: Primitive = new picc.connectors.primitives.Empty
-    for (Graph.Edge(p,i,o) <- g.edges) {
+    for (ReoGraph.Edge(p,i,o) <- g.edges) {
       res ++= genPrimitive(p.name, i.map(_.toString), o.map(_.toString), p.extra)
     }
     res
