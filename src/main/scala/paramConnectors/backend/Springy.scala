@@ -49,7 +49,7 @@ ${script(c)}
 </html>"""
 
   private def toSpringEdges(c:Connector): (List[String],List[String]) = {
-    val g = Graph(c)
+    val g = ReoGraph(c)
 //    val g = Graph(c)
     val nodes  = scala.collection.mutable.Set[String]()
     val bounds = scala.collection.mutable.Set[String]()
