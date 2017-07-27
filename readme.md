@@ -11,6 +11,9 @@ The type checking uses a mix of constraint unification and constraint solving.
 
 This project is a follow up and a simpler approach to the ideas experimented in https://github.com/joseproenca/connector-family, using a different construct to produce loops (traces instead of duals) and not considering connectors as parameters.
 
+Try it online with a new prototype visualiser, which uses a simplified engine without any constraint solving (just algebraic simplifications).
+ - http://jose.proenca.org/reolive
+
 The following example shows how to quickly build and type-check a connector.
 To try the blocks of code below, the easiest way is to use ```sbt``` build tool by using the command ```sbt console``` and copy-paste this code into the console.
 
