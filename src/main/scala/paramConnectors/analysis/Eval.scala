@@ -223,14 +223,20 @@ object Eval {
 
     var res = c
     for (a <- type4.args.vars){
-      var (expr,subst_) = subst.pop(a)
+      var (expr,subst_) = subst.pop(a) // a -> expr, and rest is subst_
       subst = subst_
       expr match {
-        case Some(e:IExpr) => res = res.apply(e)
-        case Some(e:BExpr) => res = res.apply(e)
+        case Some(e:IExpr) => // if e has free variables, give them default values, and update the substitution
+          val e2 = Eval(addDefaultsI(e))
+          subst = subst.update(a,e2)
+          res = res.apply(e2)
+        case Some(e:BExpr) =>
+          val e2 = Eval(addDefaultsB(e))
+          subst = subst.update(a,e2)
+          res = res.apply(e2)
         case None => a match {
-          case x:IVar => res = res.apply(IVal(1))
-          case x:BVar => res = res.apply(BVal(true))
+          case x:IVar => res = res.apply(IVal(1))    // default values
+          case x:BVar => res = res.apply(BVal(true)) // default values
         }
       }
     }
@@ -244,6 +250,30 @@ object Eval {
     }
 
     if (check(reduced)) Some(reduced) else None
+  }
+
+  def addDefaultsI(e:IExpr, except:Set[Var] = Set()): IExpr = e match {
+    case IVar(x) if !except(IVar(x)) => IVal(1)
+    case Add(e1, e2) => Add(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case Sub(e1, e2) => Sub(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case Mul(e1, e2) => Mul(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case Div(e1, e2) => Div(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case Sum(x, from, to, e) => Sum(x,addDefaultsI(from,except),addDefaultsI(from,except),addDefaultsI(e,except+x))
+    case ITE(b, ifTrue, ifFalse) => ITE(addDefaultsB(b,except),addDefaultsI(ifTrue,except),addDefaultsI(ifFalse,except))
+    case _ => e
+  }
+  def addDefaultsB(e:BExpr, except:Set[Var] = Set()): BExpr = e match {
+    case BVar(x) if !except(BVar(x))=> BVal(true)
+    case And(es) => And(es map (addDefaultsB(_,except)))
+    case Or(e1, e2) => Or(addDefaultsB(e1,except),addDefaultsB(e2,except))
+    case Not(e) => Not(addDefaultsB(e,except))
+    case EQ(e1, e2) => EQ(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case GT(e1, e2) => GT(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case LT(e1, e2) => LT(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case LE(e1, e2) => LE(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case GE(e1, e2) => GE(addDefaultsI(e1,except),addDefaultsI(e2,except))
+    case AndN(x, from, to, e) => AndN(x, addDefaultsI(from,except), addDefaultsI(to,except), addDefaultsB(e,except+x))
+    case _ => e
   }
 
 

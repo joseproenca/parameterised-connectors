@@ -2,7 +2,7 @@ package paramConnectors.analysis
 
 import paramConnectors._
 
-import scala.collection.immutable.Nil
+import scala.collection.immutable.{::, Nil}
 
 /**
   * Created by jose on 25/05/15.
@@ -12,6 +12,13 @@ private sealed abstract class Item {
   def getVar: Var = this match {
     case IItem(v, e) => v
     case BItem(v, e) => v
+  }
+  def replace(x:Var,e:Expr) = (x,e,this) match {
+    case (x2:IVar,e2:IExpr,IItem(v2,e3)) => IItem(v2,Substitution(x2,e2)(e3))
+    case (x2:IVar,e2:IExpr,BItem(v2,e3)) => BItem(v2,Substitution(x2,e2)(e3))
+    case (x2:BVar,e2:BExpr,IItem(v2,e3)) => IItem(v2,Substitution(x2,e2)(e3))
+    case (x2:BVar,e2:BExpr,BItem(v2,e3)) => BItem(v2,Substitution(x2,e2)(e3))
+    case _ => this
   }
 }
 private case class IItem(v:IVar,e:IExpr) extends Item {
@@ -48,6 +55,13 @@ class Substitution(private val items:List[Item], private val isGeneral:Boolean =
     case hd::tl =>
       val (e,sub) = new Substitution(tl).pop(x)
       (e,new Substitution(hd::sub.items))
+  }
+
+  /** update all variables "x" inside the expressions by "e" */
+  def update(x:Var,e:Expr): Substitution = items match {
+    case Nil => this
+    case IItem(x2,e2)::tl => new Substitution(tl).update(x,e) + (x2,Substitution(x,e)(e2))
+    case BItem(x2,e2)::tl => new Substitution(tl).update(x,e) + (x2,Substitution(x,e)(e2))
   }
 
   def apply(exp:BExpr): BExpr = {
@@ -230,8 +244,12 @@ class Substitution(private val items:List[Item], private val isGeneral:Boolean =
 object Substitution {
   def apply() = new Substitution(List())
 //    def apply(i:Item) = new Substitution(List(i))
-  def apply(x:IVar,e:IExpr) = new Substitution(List(IItem(x,e)))
-  def apply(x:BVar,e:BExpr) = new Substitution(List(BItem(x,e)))
+//  def apply(x:IVar,e:IExpr) = new Substitution(List(IItem(x,e)))
+//  def apply(x:BVar,e:BExpr) = new Substitution(List(BItem(x,e)))
+  def apply(x:Var,e:Expr) = e match {
+    case e2:IExpr =>  new Substitution(List(IItem(IVar(x.x),e2)))
+    case e2:BExpr =>  new Substitution(List(BItem(BVar(x.x),e2)))
+  }
 //  def apply(p:(IVar,IExpr)) = new Substitution(List(IItem(p._1,p._2)))
 //  def apply(p:(BVar,BExpr)) = new Substitution(List(BItem(p._1,p._2)))
 

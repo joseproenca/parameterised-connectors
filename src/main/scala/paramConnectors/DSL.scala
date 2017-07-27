@@ -311,6 +311,23 @@ object DSL {
   }
 
   /**
+    * Checks if a connector type checks, using lightTypeOf
+    *
+    * @param c connector to type check
+    * @return
+    */
+  def lightTypeChecks(c:Connector): Boolean = try {
+    lightTypeOf(c)
+    true
+  }
+  catch {
+    case _:TypeCheckException => false
+    case NonFatal(e) => throw e
+    //    case e: Throwable => throw e
+  }
+
+
+  /**
     * Checks if a given connector has parameters (i.e., it is a family)
     *
     * @param c
