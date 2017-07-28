@@ -40,19 +40,20 @@ object Parser extends RegexParsers {
     case _          => DSL.str2conn(s)
   }
 
-
   def conn: Parser[Connector] =
     lit ~ combinator ^^ {case l ~ f => f(l) }
 
   def combinator: Parser[Connector => Connector] =
     "&" ~ conn   ^^ {case _~ c => (_:Connector) & c} |
-    "*" ~ conn   ^^ {case _~ c => (_:Connector) * c} |
-    "^*"         ^^ {_ => (c:Connector) => IAbs(IVar("*"),c^IVar("*"))} |
-    "^" ~ iexpr  ^^ {case _~ i => (_:Connector) ^ i} |
-    "|" ~ bexpr  ^^ {case _~ b => (_:Connector) | b} |
-    bexpr        ^^ {b => (_: Connector)(b)}         |
-    iexpr        ^^ {e => (_: Connector)(e)}         |
-    ""           ^^ { _ => x:Connector => x}
+      "*" ~ conn   ^^ {case _~ c => (_:Connector) * c} |
+      "^*"         ^^ {_ => (c:Connector) => IAbs(IVar("n"),c^IVar("n"))} |
+      "^" ~ "("~identifier ~ "<--" ~ iexpr ~")" ^^
+        {case _~_~x~_~a~_=>(_:Connector)^(IVar(x)<--a)}|
+      "^" ~ iexpr  ^^ {case _~ i => (_:Connector) ^ i} |
+      "|" ~ bexpr  ^^ {case _~ b => (_:Connector) | b} |
+      bexpr        ^^ {b => (_: Connector)(b)}         |
+      iexpr        ^^ {e => (_: Connector)(e)}         |
+      ""           ^^ { _ => x:Connector => x}
 
   // Connector Literals:
   def lit: Parser[Connector] =
