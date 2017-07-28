@@ -47,6 +47,7 @@ object Parser extends RegexParsers {
   def combinator: Parser[Connector => Connector] =
     "&" ~ conn   ^^ {case _~ c => (_:Connector) & c} |
     "*" ~ conn   ^^ {case _~ c => (_:Connector) * c} |
+    "^*"         ^^ {_ => (c:Connector) => IAbs(IVar("*"),c^IVar("*"))} |
     "^" ~ iexpr  ^^ {case _~ i => (_:Connector) ^ i} |
     "|" ~ bexpr  ^^ {case _~ b => (_:Connector) | b} |
     bexpr        ^^ {b => (_: Connector)(b)}         |
