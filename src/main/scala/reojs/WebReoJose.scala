@@ -65,6 +65,7 @@ object WebReoJose extends{
         "(\\x.fifo^x) & (\\n.drain^n)" -> "(\\x.fifo^x) & (\\n.drain^n)",
         "\\b:B . (b? fifo + dupl) & merger" -> "\\b:B . (b? fifo + dupl) & merger",
         "(\\x .drain^(x-1)) 3" -> "(\\x .drain^(x-1)) 3",
+        ".. & merger!" -> "(writer^8) & merger! & merger! & reader!",
         "x=..;y=..;x&y" -> "x = lossy * fifo ; y = merger; x & y",
         "exrouter=.."->"writer & dupl & (dupl*id) & (((lossy*lossy) & (dupl*dupl) & (id*swap*id) & (id*id*merger))*id) & (id*id*drain) & (reader^2)",
         "zip=.."-> """zip =
