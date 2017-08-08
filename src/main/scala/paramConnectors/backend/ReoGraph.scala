@@ -98,10 +98,20 @@ object ReoGraph {
 
   def redGraphAux(es:List[Edge],m:List[(Int,Int)],ins:Set[Int]): (List[Edge],List[(Int,Int)]) = es match {
     case Nil => (es,m)
-    case Edge(Prim("sync",_,_,_),List(in),List(out))::tl if !ins.contains(in)=>
+    case Edge(Prim("sync",_,_,_),List(in),List(out))::tl => // if !ins.contains(in)=>
       val pair = out->in
       val (es2,m2) = redGraphAux(tl,m,ins)
       (es2,pair::m2)
+//    case Edge(Prim("merger",_,_,_),List(in1,in2),List(out))::tl if !(ins(in1) || ins(in2))=>
+//      val pair1 = out->in1
+//      val pair2 = out->in2
+//      val (es2,m2) = redGraphAux(tl,m,ins)
+//      (es2,pair1::pair2::m2)
+    case Edge(Prim("dupl",_,_,_),List(in),List(out1,out2))::tl => // if !ins(in) =>
+      val pair1 = out1->in
+      val pair2 = out2->in
+      val (es2,m2) = redGraphAux(tl,m,ins)
+      (es2,pair1::pair2::m2)
     case edge::tl =>
       val (es2,m2) = redGraphAux(tl,m,ins)
       (edge::es2,m2)
